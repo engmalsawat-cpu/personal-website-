@@ -10,77 +10,35 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
+import { useLang } from '@/contexts/LanguageContext';
+import { useT } from '@/constants/translations';
 import * as Haptics from 'expo-haptics';
 
-const services = [
-  {
-    number: '01',
-    title: 'Workflow design',
-    body: 'Turn scattered processes into a clear way of working that people can actually follow.',
-    tag: 'Clarity',
-  },
-  {
-    number: '02',
-    title: 'Tools that fit the work',
-    body: 'Set up Asana, Notion, or ClickUp around your team—not the other way around.',
-    tag: 'Structure',
-  },
-  {
-    number: '03',
-    title: 'Simple AI & automation',
-    body: 'Remove repetitive steps with practical automations that stay understandable and useful.',
-    tag: 'Momentum',
-  },
-];
-
-const steps = [
-  [
-    '01',
-    'See the real work',
-    'I map how work moves today, including the handoffs, bottlenecks, and workarounds.',
-  ],
-  [
-    '02',
-    'Create the clear path',
-    'Together we simplify the process and give every tool a clear purpose.',
-  ],
-  [
-    '03',
-    'Make it easier to run',
-    'We automate the repeatable parts and leave your team with a system they can own.',
-  ],
-];
+// ─── Fonts ────────────────────────────────────────────────────────────────────
+// Cairo_400Regular  → body / serif equivalent
+// Cairo_500Medium   → medium weight
+// Cairo_600SemiBold → kickers / labels
+// Cairo_700Bold     → bold / brand
 
 function ServiceRow({
   service,
   colors,
   isLast,
+  isAR,
 }: {
-  service: (typeof services)[0];
+  service: { number: string; title: string; body: string; tag: string };
   colors: ReturnType<typeof useColors>;
   isLast: boolean;
+  isAR: boolean;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
 
-  const onPressIn = () => {
-    Animated.spring(scale, {
-      toValue: 0.98,
-      useNativeDriver: true,
-      speed: 50,
-      bounciness: 2,
-    }).start();
-  };
+  const onPressIn = () =>
+    Animated.spring(scale, { toValue: 0.98, useNativeDriver: true, speed: 50, bounciness: 2 }).start();
+  const onPressOut = () =>
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 50, bounciness: 2 }).start();
 
-  const onPressOut = () => {
-    Animated.spring(scale, {
-      toValue: 1,
-      useNativeDriver: true,
-      speed: 50,
-      bounciness: 2,
-    }).start();
-  };
-
-  const s = makeServiceStyles(colors);
+  const s = makeServiceStyles(colors, isAR);
 
   return (
     <Animated.View style={{ transform: [{ scale }] }}>
@@ -105,10 +63,10 @@ function ServiceRow({
   );
 }
 
-function makeServiceStyles(colors: ReturnType<typeof useColors>) {
+function makeServiceStyles(colors: ReturnType<typeof useColors>, isAR: boolean) {
   return StyleSheet.create({
     row: {
-      flexDirection: 'row',
+      flexDirection: isAR ? 'row-reverse' : 'row',
       alignItems: 'flex-start',
       paddingVertical: 22,
       gap: 16,
@@ -118,27 +76,30 @@ function makeServiceStyles(colors: ReturnType<typeof useColors>) {
       borderBottomColor: colors.border,
     },
     number: {
-      fontFamily: 'Georgia',
+      fontFamily: 'Cairo_400Regular',
       fontSize: 11,
       color: colors.mutedForeground,
       paddingTop: 4,
       width: 28,
+      textAlign: isAR ? 'right' : 'left',
     },
     body: {
       flex: 1,
       gap: 6,
     },
     title: {
-      fontFamily: 'Georgia',
+      fontFamily: 'Cairo_700Bold',
       fontSize: 22,
       color: colors.foreground,
       fontWeight: '400' as const,
+      textAlign: isAR ? 'right' : 'left',
     },
     description: {
-      fontFamily: 'Inter_400Regular',
+      fontFamily: 'Cairo_400Regular',
       fontSize: 14,
       color: colors.mutedForeground,
-      lineHeight: 21,
+      lineHeight: isAR ? 26 : 21,
+      textAlign: isAR ? 'right' : 'left',
     },
     tag: {
       borderWidth: 1,
@@ -149,7 +110,7 @@ function makeServiceStyles(colors: ReturnType<typeof useColors>) {
       alignSelf: 'flex-start',
     },
     tagText: {
-      fontFamily: 'Inter_500Medium',
+      fontFamily: 'Cairo_600SemiBold',
       fontSize: 9,
       textTransform: 'uppercase' as const,
       letterSpacing: 1,
@@ -162,12 +123,14 @@ export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === 'web';
+  const { lang, isAR, toggle } = useLang();
+  const tr = useT(lang);
 
   const HEADER_HEIGHT = 58;
   const topInset = isWeb ? 67 : insets.top;
   const bottomInset = isWeb ? 34 : insets.bottom;
 
-  const s = makeStyles(colors, topInset, HEADER_HEIGHT, bottomInset);
+  const s = makeStyles(colors, topInset, HEADER_HEIGHT, bottomInset, isAR);
 
   const handleCTA = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -175,15 +138,31 @@ export default function HomeScreen() {
 
   return (
     <View style={s.root}>
-      {/* Fixed header */}
+      {/* ── Fixed header ── */}
       <View style={s.header}>
-        <View style={s.brandMark}>
-          <Text style={s.brandMarkText}>MA</Text>
+        {/* Brand (left in EN, right in AR) */}
+        <View style={s.brandRow}>
+          <View style={s.brandMark}>
+            <Text style={s.brandMarkText}>MA</Text>
+          </View>
+          <View style={s.brandCopy}>
+            <Text style={s.brandName}>{tr.brandName}</Text>
+            <Text style={s.brandSub}>{tr.brandSub}</Text>
+          </View>
         </View>
-        <View style={s.brandCopy}>
-          <Text style={s.brandName}>Mohammed Alsawat</Text>
-          <Text style={s.brandSub}>Work Systems & AI</Text>
-        </View>
+
+        {/* Language toggle */}
+        <TouchableOpacity
+          onPress={() => {
+            Haptics.selectionAsync();
+            toggle();
+          }}
+          style={s.langBtn}
+          activeOpacity={0.7}
+          testID="lang-toggle"
+        >
+          <Text style={s.langBtnText}>{tr.langToggle}</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -194,38 +173,33 @@ export default function HomeScreen() {
         {/* ── Hero ── */}
         <View style={s.hero}>
           <Text style={s.heroHeadline}>
-            {'There\'s a\nbetter '}
-            <Text style={s.heroAccent}>way.</Text>
+            {tr.heroLine1}
+            <Text style={s.heroAccent}>{tr.heroAccent}</Text>
           </Text>
-          <Text style={s.heroIntro}>
-            I help teams simplify workflows, choose the right tools, and use
-            practical AI automation.
-          </Text>
+          <Text style={s.heroIntro}>{tr.heroIntro}</Text>
           <TouchableOpacity
             style={s.heroCta}
             onPress={handleCTA}
             activeOpacity={0.85}
             testID="hero-cta"
           >
-            <Text style={s.heroCtaText}>Simplify your workflow  →</Text>
+            <Text style={s.heroCtaText}>{tr.heroCta}</Text>
           </TouchableOpacity>
         </View>
 
         {/* ── Services ── */}
         <View style={s.section}>
-          <Text style={s.kicker}>How I help</Text>
-          <Text style={s.h2}>{'Better systems.\nLess friction.'}</Text>
-          <Text style={s.sectionDescription}>
-            I connect the way people work, the tools they use, and the
-            automations that can give them time back.
-          </Text>
+          <Text style={s.kicker}>{tr.servicesKicker}</Text>
+          <Text style={s.h2}>{tr.servicesH2}</Text>
+          <Text style={s.sectionDescription}>{tr.servicesDesc}</Text>
           <View style={s.serviceList}>
-            {services.map((service, i) => (
+            {tr.services.map((service, i) => (
               <ServiceRow
                 key={service.number}
                 service={service}
                 colors={colors}
-                isLast={i === services.length - 1}
+                isLast={i === tr.services.length - 1}
+                isAR={isAR}
               />
             ))}
           </View>
@@ -233,19 +207,16 @@ export default function HomeScreen() {
 
         {/* ── Approach ── */}
         <View style={s.approach}>
-          <Text style={s.approachKicker}>A practical approach</Text>
-          <Text style={s.approachH2}>{'From tangled\nto clear.'}</Text>
-          <Text style={s.approachDescription}>
-            No heavy transformation program. Just a thoughtful look at the
-            work, a simpler design, and useful changes your team can keep.
-          </Text>
+          <Text style={s.approachKicker}>{tr.approachKicker}</Text>
+          <Text style={s.approachH2}>{tr.approachH2}</Text>
+          <Text style={s.approachDescription}>{tr.approachDesc}</Text>
           <View style={s.steps}>
-            {steps.map(([number, title, body]) => (
-              <View key={number} style={s.step}>
-                <Text style={s.stepNumber}>{number}</Text>
+            {tr.steps.map((step) => (
+              <View key={step.number} style={s.step}>
+                <Text style={s.stepNumber}>{step.number}</Text>
                 <View style={s.stepLine} />
-                <Text style={s.stepTitle}>{title}</Text>
-                <Text style={s.stepBody}>{body}</Text>
+                <Text style={s.stepTitle}>{step.title}</Text>
+                <Text style={s.stepBody}>{step.body}</Text>
               </View>
             ))}
           </View>
@@ -255,34 +226,25 @@ export default function HomeScreen() {
         <View style={s.about}>
           <View style={s.aboutNoteWrapper}>
             <View style={s.aboutNote}>
-              <Text style={s.aboutNoteText}>About the work</Text>
+              <Text style={s.aboutNoteText}>{tr.aboutNoteLabel}</Text>
               <View style={s.paperPin} />
             </View>
           </View>
           <Text style={s.aboutH2}>
-            {'I make the complicated\n'}
-            <Text style={s.aboutH2Em}>easier to work with.</Text>
+            {tr.aboutH2Line1}
+            <Text style={s.aboutH2Em}>{tr.aboutH2Em}</Text>
           </Text>
           <View style={s.aboutDivider} />
-          <Text style={s.aboutBody}>
-            I&apos;m Mohammed Alsawat, a workflow systems and AI consultant
-            based in Riyadh. I help teams step back from the daily noise and
-            build a way of working that feels clearer, calmer, and easier to
-            improve.
-          </Text>
-          <Text style={[s.aboutBody, { marginTop: 16 }]}>
-            My work sits between people, process, and technology—from
-            designing task systems to introducing practical AI and automation
-            without adding more complexity.
-          </Text>
+          <Text style={s.aboutBody}>{tr.aboutBody1}</Text>
+          <Text style={[s.aboutBody, { marginTop: 16 }]}>{tr.aboutBody2}</Text>
         </View>
 
         {/* ── Closing CTA ── */}
         <View style={s.closing}>
-          <Text style={s.closingKicker}>Ready when you are</Text>
-          <Text style={s.closingH2}>Less chaos.</Text>
+          <Text style={s.closingKicker}>{tr.closingKicker}</Text>
+          <Text style={s.closingH2}>{tr.closingH2}</Text>
           <View style={s.closingAccentLine}>
-            <Text style={s.closingH2Accent}>Clearer work.</Text>
+            <Text style={s.closingH2Accent}>{tr.closingH2Accent}</Text>
           </View>
           <TouchableOpacity
             style={s.closingBtn}
@@ -290,19 +252,15 @@ export default function HomeScreen() {
             activeOpacity={0.85}
             testID="closing-cta"
           >
-            <Text style={s.closingBtnText}>Start with a clearer view  ↑</Text>
+            <Text style={s.closingBtnText}>{tr.closingBtn}</Text>
           </TouchableOpacity>
         </View>
 
         {/* ── Footer ── */}
         <View style={[s.footer, { paddingBottom: bottomInset + 24 }]}>
-          <Text style={s.footerName}>Mohammed Alsawat</Text>
-          <Text style={s.footerTagline}>
-            Workflow Systems · Task Tools · Simple AI
-          </Text>
-          <Text style={s.footerLocation}>
-            Riyadh, Saudi Arabia · Available for selected consulting projects
-          </Text>
+          <Text style={s.footerName}>{tr.footerName}</Text>
+          <Text style={s.footerTagline}>{tr.footerTagline}</Text>
+          <Text style={s.footerLocation}>{tr.footerLocation}</Text>
         </View>
       </ScrollView>
     </View>
@@ -314,9 +272,13 @@ function makeStyles(
   topInset: number,
   headerHeight: number,
   bottomInset: number,
+  isAR: boolean,
 ) {
   const headerTotal = topInset + headerHeight;
   const px = 24;
+  const textAlign = isAR ? ('right' as const) : ('left' as const);
+  const rowDir = isAR ? ('row-reverse' as const) : ('row' as const);
+  const alignSelfDir = isAR ? ('flex-end' as const) : ('flex-start' as const);
 
   return StyleSheet.create({
     root: {
@@ -334,12 +296,17 @@ function makeStyles(
       paddingTop: topInset,
       height: headerTotal,
       paddingHorizontal: px,
-      flexDirection: 'row',
+      flexDirection: rowDir,
       alignItems: 'center',
-      gap: 12,
+      justifyContent: 'space-between',
       backgroundColor: colors.background,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
+    },
+    brandRow: {
+      flexDirection: rowDir,
+      alignItems: 'center',
+      gap: 12,
     },
     brandMark: {
       width: 38,
@@ -350,7 +317,7 @@ function makeStyles(
       justifyContent: 'center',
     },
     brandMarkText: {
-      fontFamily: 'Inter_700Bold',
+      fontFamily: 'Cairo_700Bold',
       fontSize: 12,
       color: colors.foreground,
       letterSpacing: -0.5,
@@ -359,14 +326,28 @@ function makeStyles(
       gap: 2,
     },
     brandName: {
-      fontFamily: 'Inter_700Bold',
+      fontFamily: 'Cairo_700Bold',
       fontSize: 13,
       color: colors.foreground,
+      textAlign,
     },
     brandSub: {
-      fontFamily: 'Inter_400Regular',
+      fontFamily: 'Cairo_400Regular',
       fontSize: 10,
       color: colors.mutedForeground,
+      textAlign,
+    },
+    langBtn: {
+      borderWidth: 1,
+      borderColor: colors.foreground,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+    },
+    langBtnText: {
+      fontFamily: 'Cairo_700Bold',
+      fontSize: 11,
+      color: colors.foreground,
+      letterSpacing: 0.5,
     },
 
     // ─── Scroll ───────────────────────────────────────────────────────────
@@ -387,31 +368,32 @@ function makeStyles(
       borderBottomColor: colors.border,
     },
     heroHeadline: {
-      fontFamily: 'Georgia',
-      fontSize: 58,
+      fontFamily: 'Cairo_400Regular',
+      fontSize: 56,
       fontWeight: '400' as const,
       color: colors.foreground,
-      lineHeight: 60,
-      letterSpacing: -2.5,
+      lineHeight: isAR ? 76 : 60,
+      letterSpacing: isAR ? -1 : -2.5,
       marginBottom: 24,
+      textAlign,
     },
     heroAccent: {
-      fontFamily: 'Georgia',
-      fontStyle: 'italic' as const,
+      fontFamily: 'Cairo_700Bold',
       color: colors.foreground,
       textDecorationLine: 'underline' as const,
       textDecorationColor: colors.primary,
     },
     heroIntro: {
-      fontFamily: 'Inter_400Regular',
+      fontFamily: 'Cairo_400Regular',
       fontSize: 16,
       color: '#35332f',
-      lineHeight: 26,
+      lineHeight: isAR ? 32 : 26,
       marginBottom: 36,
       maxWidth: 320,
+      textAlign,
     },
     heroCta: {
-      alignSelf: 'flex-start',
+      alignSelf: alignSelfDir,
       borderWidth: 1,
       borderColor: colors.foreground,
       paddingHorizontal: 20,
@@ -428,13 +410,13 @@ function makeStyles(
       }),
     },
     heroCtaText: {
-      fontFamily: 'Inter_700Bold',
+      fontFamily: 'Cairo_700Bold',
       fontSize: 13,
       color: colors.foreground,
       letterSpacing: 0.2,
     },
 
-    // ─── Generic section ─────────────────────────────────────────────────
+    // ─── Generic section ──────────────────────────────────────────────────
     section: {
       paddingHorizontal: px,
       paddingTop: 72,
@@ -443,28 +425,31 @@ function makeStyles(
       borderBottomColor: colors.border,
     },
     kicker: {
-      fontFamily: 'Inter_600SemiBold',
+      fontFamily: 'Cairo_600SemiBold',
       fontSize: 10,
       textTransform: 'uppercase' as const,
       letterSpacing: 2,
       color: colors.mutedForeground,
       marginBottom: 20,
+      textAlign,
     },
     h2: {
-      fontFamily: 'Georgia',
+      fontFamily: 'Cairo_700Bold',
       fontSize: 40,
       fontWeight: '400' as const,
       color: colors.foreground,
-      lineHeight: 44,
-      letterSpacing: -1.5,
+      lineHeight: isAR ? 60 : 44,
+      letterSpacing: isAR ? -0.5 : -1.5,
       marginBottom: 16,
+      textAlign,
     },
     sectionDescription: {
-      fontFamily: 'Inter_400Regular',
+      fontFamily: 'Cairo_400Regular',
       fontSize: 14,
       color: colors.mutedForeground,
-      lineHeight: 22,
+      lineHeight: isAR ? 28 : 22,
       marginBottom: 36,
+      textAlign,
     },
     serviceList: {
       borderTopWidth: 1,
@@ -479,28 +464,31 @@ function makeStyles(
       paddingBottom: 80,
     },
     approachKicker: {
-      fontFamily: 'Inter_600SemiBold',
+      fontFamily: 'Cairo_600SemiBold',
       fontSize: 10,
       textTransform: 'uppercase' as const,
       letterSpacing: 2,
       color: colors.approachKicker,
       marginBottom: 20,
+      textAlign,
     },
     approachH2: {
-      fontFamily: 'Georgia',
+      fontFamily: 'Cairo_700Bold',
       fontSize: 40,
       fontWeight: '400' as const,
       color: colors.approachForeground,
-      lineHeight: 44,
-      letterSpacing: -1.5,
+      lineHeight: isAR ? 60 : 44,
+      letterSpacing: isAR ? -0.5 : -1.5,
       marginBottom: 16,
+      textAlign,
     },
     approachDescription: {
-      fontFamily: 'Inter_400Regular',
+      fontFamily: 'Cairo_400Regular',
       fontSize: 14,
       color: colors.approachMuted,
-      lineHeight: 22,
+      lineHeight: isAR ? 28 : 22,
       marginBottom: 48,
+      textAlign,
     },
     steps: {
       gap: 36,
@@ -511,29 +499,33 @@ function makeStyles(
       paddingTop: 18,
     },
     stepNumber: {
-      fontFamily: 'Georgia',
+      fontFamily: 'Cairo_400Regular',
       fontSize: 12,
       color: colors.primary,
       marginBottom: 14,
+      textAlign,
     },
     stepLine: {
       width: 36,
       height: 1,
       backgroundColor: colors.primary,
       marginBottom: 16,
+      alignSelf: alignSelfDir,
     },
     stepTitle: {
-      fontFamily: 'Georgia',
+      fontFamily: 'Cairo_700Bold',
       fontSize: 22,
       fontWeight: '400' as const,
       color: colors.approachForeground,
       marginBottom: 10,
+      textAlign,
     },
     stepBody: {
-      fontFamily: 'Inter_400Regular',
+      fontFamily: 'Cairo_400Regular',
       fontSize: 14,
       color: colors.approachMuted,
-      lineHeight: 22,
+      lineHeight: isAR ? 28 : 22,
+      textAlign,
     },
 
     // ─── About ────────────────────────────────────────────────────────────
@@ -546,19 +538,20 @@ function makeStyles(
     },
     aboutNoteWrapper: {
       marginBottom: 36,
+      alignItems: isAR ? 'flex-end' : 'flex-start',
     },
     aboutNote: {
-      alignSelf: 'flex-start',
+      alignSelf: alignSelfDir,
       backgroundColor: colors.primary,
       borderWidth: 1,
       borderColor: colors.foreground,
       padding: 18,
       paddingBottom: 32,
-      transform: [{ rotate: '-2.5deg' }],
+      transform: [{ rotate: isAR ? '2.5deg' : '-2.5deg' }],
       position: 'relative',
     },
     aboutNoteText: {
-      fontFamily: 'Georgia',
+      fontFamily: 'Cairo_700Bold',
       fontSize: 18,
       color: colors.foreground,
     },
@@ -569,19 +562,21 @@ function makeStyles(
       borderRadius: 5,
       backgroundColor: colors.foreground,
       top: 8,
-      right: 10,
+      right: isAR ? undefined : 10,
+      left: isAR ? 10 : undefined,
     },
     aboutH2: {
-      fontFamily: 'Georgia',
+      fontFamily: 'Cairo_400Regular',
       fontSize: 34,
       fontWeight: '400' as const,
       color: colors.foreground,
-      lineHeight: 40,
-      letterSpacing: -1,
+      lineHeight: isAR ? 52 : 40,
+      letterSpacing: isAR ? -0.5 : -1,
       marginBottom: 28,
+      textAlign,
     },
     aboutH2Em: {
-      fontFamily: 'Georgia',
+      fontFamily: 'Cairo_400Regular',
       fontStyle: 'italic' as const,
       color: colors.mutedForeground,
     },
@@ -591,10 +586,11 @@ function makeStyles(
       marginBottom: 20,
     },
     aboutBody: {
-      fontFamily: 'Inter_400Regular',
+      fontFamily: 'Cairo_400Regular',
       fontSize: 15,
       color: '#3f3d38',
-      lineHeight: 26,
+      lineHeight: isAR ? 30 : 26,
+      textAlign,
     },
 
     // ─── Closing ──────────────────────────────────────────────────────────
@@ -605,20 +601,21 @@ function makeStyles(
       alignItems: 'center',
     },
     closingKicker: {
-      fontFamily: 'Inter_600SemiBold',
+      fontFamily: 'Cairo_600SemiBold',
       fontSize: 10,
       textTransform: 'uppercase' as const,
       letterSpacing: 2,
       color: colors.mutedForeground,
       marginBottom: 20,
+      textAlign: 'center' as const,
     },
     closingH2: {
-      fontFamily: 'Georgia',
+      fontFamily: 'Cairo_400Regular',
       fontSize: 48,
       fontWeight: '400' as const,
       color: colors.foreground,
-      lineHeight: 50,
-      letterSpacing: -2,
+      lineHeight: isAR ? 64 : 50,
+      letterSpacing: isAR ? -1 : -2,
       textAlign: 'center' as const,
     },
     closingAccentLine: {
@@ -626,12 +623,12 @@ function makeStyles(
       marginBottom: 40,
     },
     closingH2Accent: {
-      fontFamily: 'Georgia',
+      fontFamily: 'Cairo_700Bold',
       fontSize: 48,
       fontWeight: '400' as const,
       color: colors.foreground,
-      lineHeight: 50,
-      letterSpacing: -2,
+      lineHeight: isAR ? 64 : 50,
+      letterSpacing: isAR ? -1 : -2,
       textAlign: 'center' as const,
       borderBottomWidth: 4,
       borderBottomColor: colors.primary,
@@ -644,7 +641,7 @@ function makeStyles(
       paddingVertical: 14,
     },
     closingBtnText: {
-      fontFamily: 'Inter_700Bold',
+      fontFamily: 'Cairo_700Bold',
       fontSize: 13,
       color: colors.background,
       letterSpacing: 0.2,
@@ -659,20 +656,23 @@ function makeStyles(
       gap: 6,
     },
     footerName: {
-      fontFamily: 'Inter_700Bold',
+      fontFamily: 'Cairo_700Bold',
       fontSize: 13,
       color: colors.foreground,
+      textAlign,
     },
     footerTagline: {
-      fontFamily: 'Inter_400Regular',
+      fontFamily: 'Cairo_400Regular',
       fontSize: 11,
       color: colors.mutedForeground,
+      textAlign,
     },
     footerLocation: {
-      fontFamily: 'Inter_400Regular',
+      fontFamily: 'Cairo_400Regular',
       fontSize: 11,
       color: colors.mutedForeground,
       marginTop: 4,
+      textAlign,
     },
   });
 }
