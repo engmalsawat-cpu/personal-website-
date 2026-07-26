@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Mohammed Alsawat — Workflow Systems & AI"
+version = "1.0.0"
+id = "artifacts/mohammed-alsawat"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24231
+
+[services.development]
+run = "pnpm --filter @workspace/mohammed-alsawat run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/mohammed-alsawat", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/mohammed-alsawat/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24231"
+BASE_PATH = "/"
