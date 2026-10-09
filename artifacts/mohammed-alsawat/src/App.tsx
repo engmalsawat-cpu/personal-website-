@@ -1,9 +1,28 @@
 import { useState } from 'react';
+import { MotionConfig, motion } from 'framer-motion';
 import { useLang } from './contexts/LanguageContext';
+import ProjectsShowcase from './components/ProjectsShowcase';
+import { ScrollProgress, useActiveSection, fadeUp, inView, staggerParent, ease } from './components/motion';
+
+const NAV = [
+  { id: 'services', key: 'nav.work' },
+  { id: 'projects', key: 'nav.projects' },
+  { id: 'approach', key: 'nav.ai' },
+  { id: 'about', key: 'nav.about' },
+] as const;
 
 const WHATSAPP_URL = "https://wa.me/966507850644";
 
 type FormState = 'idle' | 'sending' | 'sent' | 'error';
+
+const heroLine = {
+  hidden: { opacity: 0, y: 46, filter: 'blur(8px)' },
+  show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 1, ease } },
+};
+const lineDraw = {
+  hidden: { scaleX: 0 },
+  show: { scaleX: 1, transition: { duration: 0.9, ease, delay: 0.2 } },
+};
 
 export default function App() {
   const { lang, isAr, toggle, t } = useLang();
@@ -12,6 +31,7 @@ export default function App() {
   const [formState, setFormState] = useState<FormState>('idle');
 
   const closeMenu = () => setMenuOpen(false);
+  const activeSection = useActiveSection(NAV.map(n => n.id));
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -38,16 +58,17 @@ export default function App() {
   };
 
   return (
-    <>
+    <MotionConfig reducedMotion="user">
+      <ScrollProgress />
       {/* Mobile menu overlay */}
       <div className={`mobile-menu${menuOpen ? ' mobile-menu--open' : ''}`} aria-hidden={!menuOpen} onClick={closeMenu}>
         <div className="mobile-menu__panel" onClick={e => e.stopPropagation()}>
           <button className="mobile-menu__close" onClick={closeMenu} aria-label="Close menu">✕</button>
           <nav className="mobile-menu__nav">
-            <a href="#services" onClick={closeMenu}>{t('nav.work')}</a>
-            <a href="#approach" onClick={closeMenu}>{t('nav.ai')}</a>
-            <a href="#about" onClick={closeMenu}>{t('nav.about')}</a>
-            <a href="#contact" onClick={closeMenu} className="mobile-menu__cta">{t('nav.cta')} ↗</a>
+            {NAV.map(n => (
+              <a key={n.id} href={`#${n.id}`} onClick={closeMenu}>{t(n.key)}</a>
+            ))}
+            <a href="#contact" onClick={closeMenu} className="mobile-menu__cta">{t('nav.cta')}</a>
           </nav>
           <a
             className="mobile-menu__whatsapp"
@@ -74,15 +95,20 @@ export default function App() {
             </span>
           </a>
           <nav aria-label="Main navigation">
-            <a href="#services">{t('nav.work')}</a>
-            <a href="#approach">{t('nav.ai')}</a>
-            <a href="#about">{t('nav.about')}</a>
+            {NAV.map(n => (
+              <a key={n.id} href={`#${n.id}`} aria-current={activeSection === n.id ? 'true' : undefined}>
+                {t(n.key)}
+                {activeSection === n.id && (
+                  <motion.span layoutId="nav-active" className="nav-active" transition={{ type: 'spring', stiffness: 380, damping: 32 }} />
+                )}
+              </a>
+            ))}
           </nav>
           <div className="header-right">
-            <a className="header-cta" href="#contact">{t('nav.cta')} <span aria-hidden="true">↗</span></a>
+            <a className="header-cta" href="#contact">{t('nav.cta')} <span aria-hidden="true">{isAr ? '↙' : '↘'}</span></a>
             <button
               className="lang-toggle"
-              onClick={toggle}
+              onClick={e => toggle(e)}
               aria-label={isAr ? 'Switch to English' : 'التبديل إلى العربية'}
             >
               {isAr ? 'EN' : 'AR'}
@@ -101,105 +127,120 @@ export default function App() {
         </header>
 
         <section className="hero" id="top">
-          <div className="hero-copy">
+          <motion.div className="hero-copy" key={lang} variants={staggerParent(0.12, 0.1)} initial="hidden" animate="show">
             <h1>
-              <span className="hero-line-primary">{t('hero.line1')}</span><br />
-              <span className="hero-line-secondary">{t('hero.line2')} <em className="hero-word">{t('hero.word')}</em></span>
+              <motion.span variants={heroLine} className="hero-line-primary">{t('hero.line1')}</motion.span><br />
+              <motion.span variants={heroLine} className="hero-line-secondary">{t('hero.line2')} <em className="hero-word">{t('hero.word')}</em></motion.span>
             </h1>
-            <p className="hero-intro">{t('hero.intro')}</p>
-            <div className="hero-actions">
-              <a className="button button-primary" href="#contact">{t('hero.cta')} <span aria-hidden="true">↗</span></a>
-            </div>
-          </div>
+            <motion.p variants={fadeUp} className="hero-intro">{t('hero.intro')}</motion.p>
+            <motion.div variants={fadeUp} className="hero-actions">
+              <a className="button button-primary" href="#contact">{t('hero.cta')} <span aria-hidden="true">{isAr ? '↙' : '↘'}</span></a>
+            </motion.div>
+          </motion.div>
 
-          <div className="hero-visual">
+          <motion.div
+            className="hero-visual"
+            initial={{ opacity: 0, x: isAr ? -60 : 60 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 1.2, ease, delay: 0.25 }}
+          >
             <img
               src="/hero-workflow.png"
               alt={t('hero.img.alt')}
             />
-          </div>
+          </motion.div>
           <span className="route-bridge" aria-hidden="true" />
         </section>
 
         <section className="services section-shell" id="services">
-          <div className="section-heading">
-            <p className="section-kicker">{t('services.kicker')}</p>
-            <h2>
+          <motion.div className="section-heading" variants={staggerParent(0.1)} {...inView}>
+            <motion.p variants={fadeUp} className="section-kicker">{t('services.kicker')}</motion.p>
+            <motion.h2 variants={fadeUp}>
               {t('services.h2').split('\n').map((line, i, arr) => (
                 <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
               ))}
-            </h2>
-            <p>{t('services.body')}</p>
-          </div>
-          <div className="service-list">
+            </motion.h2>
+            <motion.p variants={fadeUp}>{t('services.body')}</motion.p>
+          </motion.div>
+          <motion.div className="service-list" variants={staggerParent(0.12)} {...inView}>
             {(['01', '02', '03'] as const).map((num) => (
-              <article className="service-row" key={num}>
+              <motion.article variants={fadeUp} className="service-row" key={num}>
                 <span className="service-number">{num}</span>
                 <div>
                   <h3>{t(`service.${num}.title`)}</h3>
                   <p>{t(`service.${num}.body`)}</p>
                 </div>
                 <span className="service-tag">{t(`service.${num}.tag`)}</span>
-                <span className="service-arrow" aria-hidden="true">↗</span>
-              </article>
+                <span className="service-arrow" aria-hidden="true">{isAr ? '↖' : '↗'}</span>
+              </motion.article>
             ))}
-          </div>
+          </motion.div>
         </section>
+
+        <ProjectsShowcase />
 
         <section className="testimonials section-shell">
           <p className="section-kicker">{t('testimonials.kicker')}</p>
-          <div className="testimonials-grid">
+          <motion.div className="testimonials-grid" variants={staggerParent(0.15)} {...inView}>
             {(['1', '2'] as const).map((n) => (
-              <article className="testimonial" key={n}>
+              <motion.article variants={fadeUp} className="testimonial" key={n}>
                 <span className="testimonial-mark">"</span>
                 <p className="testimonial-quote">{t(`testimonial.${n}.quote`)}</p>
                 <footer className="testimonial-author">
                   <strong>{t(`testimonial.${n}.author`)}</strong>
                   <span>{t(`testimonial.${n}.role`)}</span>
                 </footer>
-              </article>
+              </motion.article>
             ))}
-          </div>
+          </motion.div>
         </section>
 
         <section className="approach" id="approach">
-          <div className="approach-header section-shell">
-            <p className="section-kicker">{t('approach.kicker')}</p>
-            <h2>{t('approach.h2')}</h2>
-            <p>{t('approach.body')}</p>
-          </div>
-          <div className="steps section-shell">
+          <motion.div className="approach-header section-shell" variants={staggerParent(0.1)} {...inView}>
+            <motion.p variants={fadeUp} className="section-kicker">{t('approach.kicker')}</motion.p>
+            <motion.h2 variants={fadeUp}>{t('approach.h2')}</motion.h2>
+            <motion.p variants={fadeUp}>{t('approach.body')}</motion.p>
+          </motion.div>
+          <motion.div className="steps section-shell" variants={staggerParent(0.15)} {...inView}>
             {(['01', '02', '03'] as const).map((num) => (
-              <article className="step" key={num}>
+              <motion.article variants={fadeUp} className="step" key={num}>
                 <span>{num}</span>
-                <div className="step-line" />
+                <motion.div className="step-line" variants={lineDraw} />
                 <h3>{t(`step.${num}.title`)}</h3>
                 <p>{t(`step.${num}.body`)}</p>
-              </article>
+              </motion.article>
             ))}
-          </div>
+          </motion.div>
         </section>
 
         <section className="about section-shell" id="about">
-          <div className="about-note">
-            <span>{t('about.note')}</span>
-            <div className="paper-pin" aria-hidden="true" />
-          </div>
-          <div className="about-copy">
+          <motion.div
+            className="about-note-drop"
+            initial={{ opacity: 0, y: -40, rotate: isAr ? 8 : -8 }}
+            whileInView={{ opacity: 1, y: 0, rotate: 0 }}
+            viewport={{ once: true, amount: 0.6 }}
+            transition={{ type: 'spring', stiffness: 160, damping: 14 }}
+          >
+            <div className="about-note">
+              <span>{t('about.note')}</span>
+              <div className="paper-pin" aria-hidden="true" />
+            </div>
+          </motion.div>
+          <motion.div className="about-copy" variants={fadeUp} {...inView}>
             <h2>{t('about.h2.line1')}<br /><em>{t('about.h2.em')}</em></h2>
             <div className="about-columns">
               <p>{t('about.p1')}</p>
               <p>{t('about.p2')}</p>
             </div>
-          </div>
+          </motion.div>
         </section>
 
         <section className="contact section-shell" id="contact">
-          <div className="contact-header">
+          <motion.div className="contact-header" variants={fadeUp} {...inView}>
             <p className="section-kicker">{t('contact.kicker')}</p>
             <h2>{t('contact.h2')}</h2>
             <p className="contact-sub">{t('contact.sub')}</p>
-          </div>
+          </motion.div>
           <div className="contact-grid">
             {/* WhatsApp */}
             <div className="contact-channel">
@@ -287,8 +328,8 @@ export default function App() {
 
         <section className="closing section-shell">
           <p className="section-kicker">{t('closing.kicker')}</p>
-          <h2 className="closing-headline">{t('closing.h2.line1')}<br /><span>{t('closing.h2.span')}</span></h2>
-          <a className="button button-primary" href="#contact">{t('closing.cta')} <span aria-hidden="true">↗</span></a>
+          <motion.h2 className="closing-headline" variants={fadeUp} {...inView}>{t('closing.h2.line1')}<br /><span>{t('closing.h2.span')}</span></motion.h2>
+          <a className="button button-primary" href="#contact">{t('closing.cta')} <span aria-hidden="true">{isAr ? '↙' : '↘'}</span></a>
         </section>
 
         <footer className="site-footer section-shell">
@@ -303,6 +344,6 @@ export default function App() {
           </div>
         </footer>
       </main>
-    </>
+    </MotionConfig>
   );
 }
