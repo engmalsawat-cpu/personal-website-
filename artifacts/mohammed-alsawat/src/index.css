@@ -603,6 +603,7 @@ img { display: block; max-width: 100%; }
   .hamburger { display: flex; }
   .hero { min-height: auto; }
   .hero-copy { width: 100%; min-height: 650px; padding-inline-end: clamp(32px, 6vw, 96px); }
+  [dir="rtl"] .hero-copy { padding-inline-end: clamp(32px, 6vw, 96px); }
   .hero-visual { position: relative; inset: auto; min-height: 720px; border-top: 1px solid var(--line); }
   [dir="rtl"] .hero-visual { inset: auto; }
   .route-bridge { display: none; }
@@ -621,6 +622,7 @@ img { display: block; max-width: 100%; }
   .header-cta { display: none; }
   .hero { min-height: auto; }
   .hero-copy { min-height: auto; padding: 74px 24px 62px; }
+  [dir="rtl"] .hero-copy { padding-inline: 24px; }
   .hero h1 { font-size: clamp(58px, 18vw, 82px); }
   .hero-intro { font-size: 16px; }
   .hero-actions { align-items: stretch; flex-direction: column; gap: 14px; }

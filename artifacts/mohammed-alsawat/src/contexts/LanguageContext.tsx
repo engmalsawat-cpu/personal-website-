@@ -1,11 +1,13 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { flushSync } from 'react-dom';
 
 export type Lang = 'ar' | 'en';
 
 interface LanguageContextValue {
   lang: Lang;
   isAr: boolean;
-  toggle: () => void;
+  /** Switch language; pass the click event to start the circular reveal from that point. */
+  toggle: (origin?: { clientX: number; clientY: number }) => void;
   t: (key: string) => string;
 }
 
@@ -51,6 +53,28 @@ const translations: Record<Lang, Record<string, string>> = {
     'service.03.title': 'Simple AI & automation',
     'service.03.body': 'Remove repetitive steps with practical automations that stay understandable and useful.',
     'service.03.tag': 'Momentum',
+
+
+    // Projects
+    'nav.projects': 'Projects',
+    'projects.kicker': 'Things I have built',
+    'projects.h2': 'Real systems.\nTry them yourself.',
+    'projects.body': 'Each project below is a live, clickable preview of its real screens, filled with sample data. Open one and explore it.',
+    'projects.open': 'Explore',
+    'projects.cursor': 'Open',
+    'projects.problem': 'The problem',
+    'projects.solution': 'What I built',
+    'projects.screens': 'Main screens',
+    'projects.full': 'Open full screen',
+    'projects.code': 'View the code',
+    'projects.similar': 'I want something similar',
+    'projects.private': 'Private repo',
+    'projects.sample': 'Sample data',
+    'projects.loading': 'Loading preview…',
+    'projects.close': 'Close',
+    'projects.prev': 'Previous project',
+    'projects.next': 'Next project',
+    'projects.hint': 'Esc to close · arrow keys to switch projects',
 
     // Testimonials
     'testimonials.kicker': 'What clients say',
@@ -151,6 +175,28 @@ const translations: Record<Lang, Record<string, string>> = {
     'service.03.body': 'نزيل الخطوات المتكررة بأتمتة عملية تبقى مفهومة ومفيدة.',
     'service.03.tag': 'زخم',
 
+
+    // Projects
+    'nav.projects': 'المشاريع',
+    'projects.kicker': 'مشاريع بنيتها',
+    'projects.h2': 'أنظمة حقيقية.\nجرّبها بنفسك.',
+    'projects.body': 'كل مشروع هنا معاينة حيّة لشاشاته الفعلية ببيانات تجريبية. افتح أي مشروع وتنقّل فيه بنفسك.',
+    'projects.open': 'استكشف',
+    'projects.cursor': 'افتح',
+    'projects.problem': 'المشكلة',
+    'projects.solution': 'ما بنيته',
+    'projects.screens': 'الشاشات الرئيسية',
+    'projects.full': 'افتح بملء الشاشة',
+    'projects.code': 'الكود على GitHub',
+    'projects.similar': 'أريد نظاماً مشابهاً',
+    'projects.private': 'مستودع خاص',
+    'projects.sample': 'بيانات تجريبية',
+    'projects.loading': 'جارٍ تحميل المعاينة…',
+    'projects.close': 'إغلاق',
+    'projects.prev': 'المشروع السابق',
+    'projects.next': 'المشروع التالي',
+    'projects.hint': 'Esc للإغلاق · الأسهم للتنقّل بين المشاريع',
+
     // Testimonials
     'testimonials.kicker': 'ما يقوله العملاء',
     'testimonial.1.quote': 'أبو صالح من أفضل الناس الذين تعاملنا معهم. يجعل كل شيء أكثر ترابطاً من خلال أدواته وأتمتته.',
@@ -234,12 +280,34 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     html.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
   }, [lang]);
 
-  const toggle = useCallback(() => {
-    setLang(prev => {
-      const next: Lang = prev === 'ar' ? 'en' : 'ar';
-      localStorage.setItem('lang', next);
-      return next;
-    });
+  const toggle = useCallback((origin?: { clientX: number; clientY: number }) => {
+    const apply = () => {
+      flushSync(() => {
+        setLang(prev => {
+          const next: Lang = prev === 'ar' ? 'en' : 'ar';
+          localStorage.setItem('lang', next);
+          return next;
+        });
+      });
+    };
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce || typeof document.startViewTransition !== 'function') {
+      apply();
+      return;
+    }
+    // Circular reveal of the new language, growing from the toggle button
+    const x = origin?.clientX ?? window.innerWidth / 2;
+    const y = origin?.clientY ?? 0;
+    const r = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+    const vt = document.startViewTransition(apply);
+    vt.ready
+      .then(() => {
+        document.documentElement.animate(
+          { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${r}px at ${x}px ${y}px)`] },
+          { duration: 750, easing: 'cubic-bezier(.22,1,.36,1)', pseudoElement: '::view-transition-new(root)' },
+        );
+      })
+      .catch(() => {});
   }, []);
 
   const t = useCallback(
