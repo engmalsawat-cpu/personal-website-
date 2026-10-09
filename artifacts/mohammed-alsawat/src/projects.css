@@ -77,10 +77,10 @@
 
 .pcard-stage {
   position: relative;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 10 / 7;
   display: grid;
   place-items: center;
-  padding: clamp(18px, 3vw, 40px);
+  padding: clamp(14px, 2vw, 26px);
   background: var(--white);
   border: 1px solid var(--ink);
   overflow: hidden;
@@ -114,7 +114,7 @@
 .pcard-num { font-size: 13px; color: var(--muted); padding-top: 6px; }
 .pcard-copy h3 { margin: 0 0 6px; font: 400 clamp(22px, 2vw, 28px)/1.15 var(--font); width: fit-content; }
 .pcard--lead .pcard-copy h3 { font-size: clamp(28px, 2.6vw, 38px); }
-.pcard-copy p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.6; }
+.pcard-copy p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.6; text-wrap: pretty; }
 .pcard-arrow { font-size: 18px; padding-top: 4px; transition: transform 220ms ease; }
 .pcard-hit:hover .pcard-arrow { transform: translate(3px, -3px); }
 [dir="rtl"] .pcard-hit:hover .pcard-arrow { transform: translate(-3px, -3px); }
@@ -146,7 +146,8 @@
   border: 1px solid var(--ink);
   box-shadow: 0 1px 0 var(--ink);
 }
-.device--thumb.device--desktop { width: 92%; }
+.device--thumb.device--desktop { width: 96%; }
+.pcard--lead .device--thumb.device--desktop { width: 94%; }
 .device-bar {
   flex: none;
   display: flex;
@@ -242,10 +243,10 @@
   padding: clamp(18px, 2.4vw, 32px) clamp(20px, 4vw, 56px) 0;
 }
 .stage-info { overflow-y: auto; padding-bottom: 40px; scrollbar-width: thin; -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), transparent); }
-.stage-tagline { margin: 0 0 26px; font: 400 clamp(22px, 2vw, 28px)/1.35 var(--font); }
+.stage-tagline { margin: 0 0 26px; font: 400 clamp(22px, 2vw, 28px)/1.35 var(--font); text-wrap: balance; }
 .stage-block { margin-bottom: 22px; }
 .stage-block h4 { margin: 0 0 8px; font-size: 13px; font-weight: 700; color: var(--muted); }
-.stage-block p { margin: 0; font-size: 15px; line-height: 1.75; color: #35332f; }
+.stage-block p { margin: 0; font-size: 15px; line-height: 1.75; color: #35332f; text-wrap: pretty; }
 .stage-highlights { list-style: none; margin: 0 0 24px; padding: 0; border-top: 1px solid var(--ink); }
 .stage-highlights li { position: relative; padding: 11px 0; padding-inline-start: 22px; border-bottom: 1px solid var(--line); font-size: 15px; }
 .stage-highlights li::before {
@@ -347,3 +348,8 @@
 }
 
 .about-note-drop { align-self: start; }
+
+/* Phone thumbnails rise from the bottom edge of the card, larger and cropped */
+.pcard-stage--mobile { padding-bottom: 0; align-items: start; }
+.pcard-stage--mobile .device--thumb.device--mobile { height: 128%; margin-top: 7%; transition: transform 420ms cubic-bezier(.22,1,.36,1); }
+.pcard-hit:hover .pcard-stage--mobile .device--thumb { transform: translateY(-14px); }

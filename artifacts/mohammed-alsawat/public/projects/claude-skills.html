@@ -1,0 +1,1212 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Claude Skills — مهارات Claude المخصّصة</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F6F4EE;--side:#EFECE4;--surface:#FFFFFF;--paper:#FBFAF7;
+  --ink:#24221E;--ink2:#4A463F;--muted:#857F74;--line:#E4DFD4;--line2:#D6D0C3;
+  --accent:#C2613F;--accent-ink:#9E4A2E;--accent-soft:#F6E7DF;
+  --green:#1B6B4A;--green-soft:#E2EFE7;--red:#B9382F;--red-soft:#F8E3E0;
+  --purple:#7A4FD0;--purple-soft:#EFE8FB;--amber:#6E4B00;--amber-soft:#F6E2B3;
+  --code:#2A2926;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --ease:cubic-bezier(.2,.75,.2,1);
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:'Tajawal',system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;overflow:hidden;font-size:15px}
+button{font:inherit;color:inherit;cursor:pointer}
+code,.mono{font-family:var(--mono)}
+*{scrollbar-width:thin;scrollbar-color:#CFC8BA transparent}
+.thumb *{scrollbar-width:none}
+.thumb ::-webkit-scrollbar{display:none}
+
+/* ---------- shell ---------- */
+.app{display:grid;grid-template-columns:236px minmax(0,1fr);height:100vh;height:100dvh}
+.side{background:var(--side);border-inline-end:1px solid var(--line);display:flex;flex-direction:column;padding:18px 12px 14px;gap:20px;view-transition-name:side;min-height:0}
+.brand{display:flex;align-items:center;gap:10px;padding:2px 6px}
+.logo{width:34px;height:34px;border-radius:10px;background:var(--accent);display:grid;place-items:center;flex:none}
+.logo svg{width:20px;height:20px}
+.brand b{font-size:16px;display:block;font-weight:800;letter-spacing:.2px}
+.brand small{color:var(--muted);font-size:12.5px}
+.btn-replay.replay-m{display:none}
+.nav{display:flex;flex-direction:column;gap:3px}
+.nav-label{font-size:12px;color:var(--muted);padding:4px 10px 4px;font-weight:700}
+.nav button{display:flex;align-items:center;gap:10px;border:0;background:none;padding:9px 10px;border-radius:10px;text-align:start;color:var(--ink2);transition:background .2s}
+.nav button:hover{background:#E7E3D9}
+.nav button[aria-current="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(40,30,20,.08)}
+.nav .ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:#E5E1D6;flex:none;color:var(--ink2)}
+.nav button[aria-current="true"] .ic{background:var(--accent-soft);color:var(--accent-ink)}
+.nav .ic svg{width:16px;height:16px}
+.nav .tx{display:flex;flex-direction:column;line-height:1.3;min-width:0}
+.nav .tx b{font-size:14.5px;font-weight:700}
+.nav .tx small{font-family:var(--mono);font-size:11px;color:var(--muted);direction:ltr;text-align:end}
+.side-foot{margin-top:auto;font-size:12px;color:var(--muted);padding:10px;border-top:1px solid var(--line);line-height:1.6}
+.side-foot .mono{direction:ltr;display:block;text-align:end;font-size:11px;color:var(--ink2)}
+
+.main{display:flex;flex-direction:column;min-width:0;min-height:0}
+.top{height:54px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 22px;border-bottom:1px solid var(--line);view-transition-name:topbar;background:var(--bg)}
+.crumb{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.crumb .mono{font-size:12.5px}
+.crumb b{color:var(--ink);font-weight:700}
+.btn-replay{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line2);background:var(--surface);border-radius:10px;padding:6px 12px;font-size:13.5px;color:var(--ink2);transition:border-color .2s,background .2s}
+.btn-replay:hover{border-color:var(--accent);color:var(--accent-ink)}
+.btn-replay svg{width:15px;height:15px}
+.screens{flex:1;min-height:0;position:relative}
+.screen{display:none;height:100%;min-height:0}
+.screen.active{display:grid}
+.screen.enter{animation:enter .45s var(--ease) both}
+@keyframes enter{from{opacity:0;transform:translateY(10px)}}
+
+/* ---------- work screens (chat + artifact) ---------- */
+.work{grid-template-columns:minmax(340px,430px) minmax(0,1fr)}
+.chat{display:flex;flex-direction:column;min-height:0;border-inline-end:1px solid var(--line)}
+.thread{flex:1;overflow:auto;padding:22px 20px 12px;display:flex;flex-direction:column;gap:14px}
+.composer{margin:8px 16px 16px;border:1px solid var(--line2);background:var(--surface);border-radius:16px;padding:12px 12px 10px 12px;display:flex;align-items:flex-end;gap:10px;box-shadow:0 1px 3px rgba(40,30,20,.05);transition:border-color .25s,box-shadow .25s;flex:none}
+.composer.typing{border-color:#C9B9A8;box-shadow:0 0 0 3px rgba(194,97,63,.08)}
+.cin{flex:1;min-height:42px;font-size:14.5px;line-height:1.6;position:relative}
+.cin .ph{color:#A8A296;position:absolute;inset-inline-start:0;top:0}
+.cin .ctext:not(:empty) + .ph{display:none}
+.cin .caret{display:none;width:2px;height:17px;background:var(--accent);vertical-align:-3px;margin-inline-start:1px;animation:blink 1s steps(1) infinite}
+.composer.typing .caret{display:inline-block}
+.composer.typing .ph{display:none}
+@keyframes blink{50%{opacity:0}}
+.send{width:32px;height:32px;border-radius:10px;border:0;background:#D9D3C7;display:grid;place-items:center;color:#fff;flex:none;transition:background .2s,transform .2s}
+.composer.typing .send{background:var(--accent)}
+.send.pop{transform:scale(.88)}
+.send svg{width:16px;height:16px}
+
+.msg{animation:rise .35s var(--ease) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}}
+.msg.user{align-self:flex-end;max-width:88%}
+.msg.user .bubble{background:#EAE5DA;border-radius:16px;padding:10px 14px;font-size:14.5px;line-height:1.7}
+.msg.ai{display:flex;gap:10px;align-items:flex-start}
+.av{width:26px;height:26px;border-radius:8px;background:var(--accent);display:grid;place-items:center;flex:none;margin-top:2px}
+.av svg{width:15px;height:15px}
+.ai-body{flex:1;min-width:0;font-size:14.5px;line-height:1.8;display:flex;flex-direction:column;gap:10px}
+.ai-body p{margin:0}
+.skills{display:flex;flex-wrap:wrap;gap:6px}
+.skill{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line2);background:var(--surface);border-radius:999px;padding:4px 11px 4px 10px;font-size:12.5px;color:var(--ink2);animation:rise .3s var(--ease) both}
+.skill code{font-size:11.5px;color:var(--ink);direction:ltr;unicode-bidi:isolate}
+.skill .st{width:14px;height:14px;border-radius:50%;border:2px solid #D2CBBE;border-top-color:var(--accent);animation:spin .8s linear infinite;flex:none}
+.skill.done .st{animation:none;border:0;background:var(--accent);display:grid;place-items:center}
+.skill.done .st::after{content:"";width:6px;height:3px;border:solid #fff;border-width:0 0 1.6px 1.6px;transform:rotate(-45deg) translate(0,-1px)}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.codeblk{background:var(--code);border-radius:12px;overflow:hidden;direction:ltr;text-align:left;animation:rise .35s var(--ease) both}
+.codeblk .cb-h{display:flex;justify-content:space-between;align-items:center;padding:7px 12px;font:11px var(--mono);color:#A9A398;border-bottom:1px solid #3A3935}
+.codeblk pre{margin:0;padding:10px 12px 12px;font:11.4px/1.75 var(--mono);color:#E9E4DA;white-space:pre;overflow-x:auto}
+.codeblk .ln{display:block;min-height:1.75em;opacity:0;transform:translateX(-4px);transition:opacity .25s,transform .25s}
+.codeblk .ln.on{opacity:1;transform:none}
+.codeblk .ln.hot{background:rgba(255,255,255,.06);border-radius:4px}
+.tk-k{color:#E7A07F}.tk-s{color:#B7D79E;unicode-bidi:isolate}.tk-c{color:#8E897F;unicode-bidi:isolate}.tk-f{color:#F0C674}.tk-n{color:#9CC7E8}
+
+.rules{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:6px 4px;animation:rise .35s var(--ease) both}
+.rules .rh{font-size:12.5px;color:var(--muted);padding:4px 10px 6px;font-weight:700}
+.rule{display:grid;grid-template-columns:20px 1fr;gap:4px 8px;align-items:start;padding:6px 10px;border-radius:8px;transition:background .3s}
+.rule .ck{width:18px;height:18px;border-radius:50%;border:1.6px solid #D2CBBE;margin-top:3px;display:grid;place-items:center;transition:all .3s}
+.rule.on .ck{background:var(--green);border-color:var(--green)}
+.rule.on .ck::after{content:"";width:7px;height:3.5px;border:solid #fff;border-width:0 0 1.8px 1.8px;transform:rotate(-45deg) translate(0,-1px)}
+.rule.on{background:#F4F8F5}
+.rule .rc{direction:ltr;text-align:right;font:11.5px/1.6 var(--mono);color:var(--ink)}
+.rule .rc i{font-style:normal;color:var(--green)}
+.rule .rd{grid-column:2;font-size:12.5px;color:var(--muted);line-height:1.5}
+.qa{display:flex;gap:8px;align-items:flex-start;background:var(--green-soft);border-radius:10px;padding:8px 12px;font-size:13.5px;color:#1C4E37;animation:rise .35s var(--ease) both}
+.qa b{font-weight:800}
+
+.qcard{border:1px solid var(--line2);border-radius:12px;background:var(--surface);padding:10px 12px 12px;animation:rise .35s var(--ease) both}
+.qcard .q{font-size:14px;font-weight:700;margin-bottom:8px}
+.opts{display:flex;flex-wrap:wrap;gap:6px}
+.opts span{border:1px solid var(--line2);border-radius:999px;padding:4px 12px;font-size:13px;color:var(--ink2);transition:all .25s}
+.opts span.picked{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink);font-weight:700;transform:scale(1.03)}
+.sum{display:flex;flex-wrap:wrap;gap:6px}
+.sum span{background:#EEEBE3;border-radius:8px;padding:3px 10px;font-size:12.5px;color:var(--ink2);animation:rise .35s var(--ease) both}
+.sum span:nth-child(2){animation-delay:.08s}.sum span:nth-child(3){animation-delay:.16s}.sum span:nth-child(4){animation-delay:.24s}
+
+.stage{padding:18px;min-width:0;min-height:0;display:flex}
+.panel{flex:1;display:flex;flex-direction:column;background:var(--paper);border:1px solid var(--line);border-radius:16px;box-shadow:0 1px 2px rgba(40,30,20,.04),0 10px 28px -14px rgba(40,30,20,.16);min-height:0;min-width:0;overflow:hidden}
+#s-arabic-docx-rtl.active .panel{view-transition-name:skill-docx}
+#s-nusuk-user-story.active .panel{view-transition-name:skill-story}
+.p-head{display:flex;align-items:center;gap:10px;padding:10px 12px 10px 14px;border-bottom:1px solid var(--line);background:var(--surface);flex:none;min-height:54px}
+.fi{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex:none}
+.fi svg{width:16px;height:16px}
+.fi.word{background:#E3ECF7;color:#2B5797}
+.fi.md{background:var(--accent-soft);color:var(--accent-ink)}
+.fi.sk{background:#ECE8DF;color:var(--ink2)}
+.p-title{flex:1;min-width:0;line-height:1.35}
+.p-title b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p-title small{font-size:11.5px;color:var(--muted);font-family:var(--mono)}
+.seg{display:inline-flex;background:#ECE8DF;border-radius:10px;padding:3px;flex:none}
+.seg button{border:0;background:none;padding:5px 11px;border-radius:8px;font-size:12.5px;color:var(--muted);display:inline-flex;align-items:center;gap:6px;transition:all .2s}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(40,30,20,.1);font-weight:700}
+.seg .dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+.seg .dot.bad{background:var(--red)}
+.p-body{flex:1;overflow:auto;min-height:0;position:relative}
+
+/* ---------- word document ---------- */
+.desk{background:#E8E5DE;padding:26px 22px 30px;min-height:100%;position:relative}
+.stamp{position:sticky;top:0;z-index:2;display:flex;justify-content:center;height:0;overflow:visible}
+.stamp span{margin-top:-12px;background:var(--red);color:#fff;font-size:12px;font-weight:700;border-radius:8px;padding:3px 12px;opacity:0;transform:translateY(-6px);transition:all .3s;box-shadow:0 4px 12px -4px rgba(185,56,47,.5);height:fit-content}
+.desk.broken .stamp span{opacity:1;transform:none}
+.page{max-width:600px;margin:0 auto;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.08),0 8px 22px -10px rgba(0,0,0,.18);padding:44px 50px 50px;font-family:Arial,'Tajawal',sans-serif;color:#1A1A1A;min-height:540px;transition:box-shadow .3s}
+.desk.broken .page{box-shadow:0 0 0 2px rgba(185,56,47,.35),0 8px 22px -10px rgba(0,0,0,.18)}
+.dp{margin:0 0 6px;text-align:right;line-height:1.7;font-size:13.5px}
+.d-title{font-size:20px;font-weight:700;margin-bottom:4px}
+.d-meta{color:#666;font-size:12.5px;margin-bottom:18px}
+.d-h{font-size:15px;font-weight:700;color:#1B6B4A;margin:14px 0 6px}
+.d-b{color:#333}
+.blt,.pd{border-radius:4px;transition:background .3s,color .3s,box-shadow .3s}
+.desk.broken .blt,.desk.broken .pd{color:var(--red);background:var(--red-soft);box-shadow:0 0 0 2px var(--red-soft)}
+.dt{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
+.dt th{background:#1B6B4A;color:#fff;font-weight:700;text-align:center;padding:8px 6px;border:1px solid #BBB}
+.dt td{border:1px solid #BBB;padding:6px 8px;vertical-align:top}
+.dt td .dp{font-size:12.5px;margin:0;color:#333}
+.desk.broken .dt th:first-child{box-shadow:inset 0 -3px 0 #F2B8B0}
+.dt tr{transition:opacity .35s}
+.rv{transition:opacity .4s var(--ease),transform .4s var(--ease)}
+.pend{opacity:0;transform:translateY(6px)}
+tr.pend{display:none}
+.cursor{display:inline-block;width:2px;height:18px;background:#2B5797;animation:blink 1s steps(1) infinite;vertical-align:middle}
+.legend{display:flex;gap:6px;flex-wrap:wrap;padding:9px 12px;border-top:1px solid var(--line);background:var(--surface);flex:none;min-height:46px;align-items:center}
+.legend span{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;border-radius:8px;padding:4px 10px;animation:rise .3s var(--ease) both}
+.legend .ok{background:var(--green-soft);color:#1C4E37}
+.legend .bad{background:var(--red-soft);color:#8A2A23}
+.legend .note{color:var(--muted);padding-inline:2px}
+.legend span:nth-child(2){animation-delay:.06s}.legend span:nth-child(3){animation-delay:.12s}
+
+/* ---------- user story ---------- */
+.empty{height:100%;display:grid;place-items:center;color:#A8A296;font-size:14px;text-align:center;padding:20px}
+.empty svg{width:34px;height:34px;display:block;margin:0 auto 8px;opacity:.6}
+.story{direction:ltr;text-align:left;padding:24px 30px 56px;font-size:13.8px;line-height:1.72;color:var(--ink);max-width:780px;margin:0 auto}
+.story .ar{unicode-bidi:isolate;font-family:'Tajawal',sans-serif}
+.st-title{font-size:21px;font-weight:800;margin:0 0 4px;line-height:1.35}
+.st-sec{font-size:12.5px;font-weight:800;letter-spacing:.3px;margin:20px 0 6px;color:var(--ink);display:flex;align-items:center;gap:8px}
+.st-sec::after{content:"";flex:1;height:1px;background:var(--line)}
+.story p{margin:0 0 4px}
+.st-quote{border-left:3px solid var(--accent);background:var(--accent-soft);padding:8px 14px;border-radius:0 8px 8px 0;font-style:italic;color:#3A2A22}
+.st-quote .ar{font-style:normal}
+.ac{border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:#fff;margin:0 0 7px;animation:rise .3s var(--ease) both}
+.ac b{display:block;font-size:13.5px;margin-bottom:2px}
+.ac .g{display:grid;grid-template-columns:50px 1fr;padding-left:2px}
+.ac .kw{font-family:var(--mono);font-size:11.5px;font-weight:700;color:var(--accent-ink);display:inline-block;min-width:44px}
+.story ul{margin:0;padding-left:18px}
+.story li{margin:2px 0;animation:rise .3s var(--ease) both}
+.story li::marker{color:var(--accent)}
+.pill{display:inline-block;font:600 10.8px/1.6 var(--mono);border-radius:6px;padding:0 6px;margin:0 2px;vertical-align:1px;animation:pop .3s var(--ease) both;white-space:nowrap}
+@keyframes pop{from{opacity:0;transform:scale(.7)}}
+.pill.asm{background:var(--amber-soft);color:var(--amber)}
+.pill.ux{background:var(--purple-soft);color:var(--purple)}
+.pill.ux::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--purple);margin-right:4px;vertical-align:0}
+.tbl{width:100%;border-collapse:collapse;font-size:12.8px;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.tbl th{background:#F1EEE7;text-align:left;font-weight:700;padding:7px 10px;border-bottom:1px solid var(--line)}
+.tbl td{padding:7px 10px;border-top:1px solid #EFEBE3;vertical-align:top;line-height:1.55}
+.tbl td:first-child{font-weight:500;width:38%}
+.ux-h{color:var(--purple)}
+.ux-h::after{background:#DCCFF5!important}
+.ux-h .d{width:9px;height:9px;border-radius:50%;background:var(--purple);flex:none}
+.tbl.uxt th{background:var(--purple-soft);color:#4B2E8F}
+.tbl.uxt td:first-child{width:28px;font-family:var(--mono);color:var(--purple);font-weight:700}
+.tbl.uxt td:nth-child(2){width:22%}
+.tbl.uxt .s-ar{direction:rtl;text-align:right;font-family:'Tajawal',sans-serif;font-size:13.5px;color:var(--ink);display:block}
+.tbl.uxt .s-en{color:#6E685E;display:block;font-size:12.3px;margin-top:2px}
+.raw{direction:ltr;text-align:left;margin:0;padding:20px 24px 40px;font:12px/1.75 var(--mono);white-space:pre-wrap;word-break:break-word;color:var(--ink2)}
+.raw .h{color:var(--accent-ink);font-weight:700}
+
+/* ---------- overview ---------- */
+.ov{grid-template-columns:minmax(0,1fr) minmax(340px,41%)}
+.ov-main{overflow:auto;padding:24px 28px 24px 16px;min-height:0}
+.eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--accent-ink);background:var(--accent-soft);border-radius:999px;padding:3px 11px;font-weight:700}
+.ov h1{font-size:26px;line-height:1.35;margin:10px 0 6px;font-weight:800;letter-spacing:-.2px}
+.lead{color:var(--ink2);font-size:15px;line-height:1.8;margin:0 0 14px;max-width:640px}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.step{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--ink2);line-height:1.5;background:#EFECE4;border-radius:12px;padding:10px 12px}
+.step i{font-style:normal;width:22px;height:22px;border-radius:50%;background:var(--surface);display:grid;place-items:center;font-size:12px;font-weight:800;color:var(--accent-ink);flex:none}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:15px 16px 14px;display:flex;flex-direction:column;gap:9px;transition:border-color .3s,box-shadow .3s}
+.card.sel{border-color:#E1B9A6;box-shadow:0 0 0 3px rgba(194,97,63,.08)}
+.ov.in .card{animation:rise .5s var(--ease) both}
+.ov.in .card:nth-child(2){animation-delay:.1s}
+.ov.in .step{animation:rise .45s var(--ease) both}
+.ov.in .step:nth-child(2){animation-delay:.06s}.ov.in .step:nth-child(3){animation-delay:.12s}
+#s-overview.active .card[data-skill="docx"]{view-transition-name:skill-docx}
+#s-overview.active .card[data-skill="story"]{view-transition-name:skill-story}
+.c-top{display:flex;align-items:center;gap:10px}
+.c-ic{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;flex:none}
+.c-ic svg{width:20px;height:20px}
+.c-name{font-family:var(--mono);font-size:13px;font-weight:600;direction:ltr;unicode-bidi:isolate}
+.c-kind{font-size:11.5px;color:var(--muted);display:block}
+.card h3{margin:0;font-size:17px;line-height:1.45;font-weight:800}
+.card p{margin:0;font-size:13.5px;color:var(--ink2);line-height:1.75}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:12.5px;align-items:baseline}
+.kv dt{color:var(--muted);font-weight:700;white-space:nowrap}
+.kv dd{margin:0;display:flex;flex-wrap:wrap;gap:4px;color:var(--ink2);line-height:1.6}
+.tag{background:#F0EDE6;border-radius:6px;padding:0 7px;font-size:12px;color:var(--ink2)}
+.files{font-family:var(--mono);font-size:10.8px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 6px}
+.files span{white-space:nowrap;background:#F6F4EF;border:1px solid #EDE9E1;border-radius:6px;padding:0 6px;direction:ltr}
+.c-act{display:flex;gap:8px;margin-top:auto;padding-top:4px}
+.b-pri{flex:1;border:0;background:var(--ink);color:#fff;border-radius:10px;padding:9px 12px;font-size:13.5px;font-weight:700;display:inline-flex;justify-content:center;align-items:center;gap:6px;transition:background .2s}
+.b-pri:hover{background:var(--accent)}
+.b-pri svg{width:14px;height:14px}
+.b-sec{border:1px solid var(--line2);background:var(--surface);border-radius:10px;padding:8px 12px;font:600 12px var(--mono);color:var(--ink2)}
+.b-sec:hover,.b-sec[aria-pressed="true"]{border-color:var(--accent);color:var(--accent-ink)}
+.ov .stage{padding:18px 18px 18px 22px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tabs button{border:1px solid transparent;background:none;border-radius:8px;padding:4px 9px;font:11.5px var(--mono);color:var(--muted)}
+.tabs button[aria-pressed="true"]{background:#F0EDE6;border-color:var(--line);color:var(--ink)}
+.peek{direction:ltr;text-align:left;margin:0;padding:14px 18px 30px;font:11.8px/1.75 var(--mono);white-space:pre-wrap;word-break:break-word;color:var(--ink2)}
+.peek .l{display:block;min-height:1.75em;transition:opacity .25s}
+.peek .l.pend{opacity:0;transform:none}
+.y-k{color:var(--accent-ink);font-weight:600}
+.m-h{color:var(--green);font-weight:700}
+.m-c{color:#A29C90}
+.m-bt{background:#F0EDE6;border-radius:4px;padding:0 3px;color:#7A3B22}
+.m-b{color:var(--ink);font-weight:700}
+.j-k{color:#A2471F}.j-s{color:#2F7A4F;unicode-bidi:isolate}.j-c{color:#A29C90;unicode-bidi:isolate}
+
+/* ---------- view transitions ---------- */
+::view-transition-old(root),::view-transition-new(root){animation-duration:.36s;animation-timing-function:var(--ease)}
+::view-transition-old(root){animation-name:vt-out}
+::view-transition-new(root){animation-name:vt-in}
+@keyframes vt-out{to{opacity:0}}
+@keyframes vt-in{from{opacity:0;transform:translateY(8px)}}
+::view-transition-group(*){animation-duration:.5s;animation-timing-function:var(--ease)}
+::view-transition-group(side),::view-transition-group(topbar){animation-duration:0s}
+
+/* ---------- responsive ---------- */
+@media (max-width:1080px){
+  .work{grid-template-columns:minmax(300px,370px) minmax(0,1fr)}
+  .cards{grid-template-columns:1fr}
+  .steps{grid-template-columns:1fr}
+}
+@media (max-width:760px){
+  body{font-size:14px}
+  .app{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}
+  .side{flex-direction:row;flex-wrap:wrap;padding:10px 12px 8px;gap:8px;border-inline-end:0;border-bottom:1px solid var(--line);align-items:center}
+  .brand{flex:1;padding:0}
+  .logo{width:30px;height:30px}
+  .brand small{display:none}
+  .btn-replay.replay-m{display:inline-flex;padding:5px 10px;font-size:12.5px}
+  .nav{flex-direction:row;width:100%;gap:4px}
+  .nav-label,.side-foot,.top{display:none}
+  .nav button{flex:1;justify-content:center;padding:6px 4px;gap:6px}
+  .nav .ic{width:22px;height:22px;background:none!important}
+  .nav .ic svg{width:15px;height:15px}
+  .nav .tx b{font-size:12.5px;white-space:nowrap}
+  .nav .tx small{display:none}
+  .work{grid-template-columns:1fr;grid-template-rows:minmax(0,43%) minmax(0,57%)}
+  .chat{border-inline-end:0;border-bottom:1px solid var(--line)}
+  .thread{padding:14px 14px 8px;gap:11px}
+  .composer{margin:4px 10px 10px;padding:8px 10px}
+  .cin{min-height:24px;font-size:13.5px}
+  .msg.user .bubble,.ai-body{font-size:13.5px}
+  .stage{padding:10px}
+  .p-head{min-height:46px;padding:8px 10px;gap:8px}
+  .p-title b{font-size:13px}
+  .p-title small{display:none}
+  .seg button{padding:4px 8px;font-size:11.5px}
+  .desk{padding:12px 10px 20px}
+  .page{padding:24px 18px 28px;min-height:0}
+  .d-title{font-size:16px}
+  .dp{font-size:12.5px}
+  .dt,.dt td .dp{font-size:11.5px}
+  .dt th{padding:6px 3px}
+  .dt td{padding:5px 4px}
+  .legend{padding:7px 10px;min-height:40px}
+  .legend span{font-size:11.5px;padding:3px 8px}
+  .legend .note{display:none}
+  .story{padding:16px 16px 30px;font-size:13px}
+  .st-title{font-size:18px}
+  .ov.active{display:block;overflow:auto}
+  .ov-main{overflow:visible;padding:18px 14px 6px}
+  .ov h1{font-size:22px}
+  .lead{font-size:14px}
+  .ov .stage{padding:8px 14px 18px;height:430px}
+  .codeblk pre{font-size:10.6px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+  ::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path fill="#fff" d="M12 2.2l1.55 6.1 5.5-3.3-3.3 5.5 6.05 1.5-6.05 1.5 3.3 5.5-5.5-3.3L12 21.8l-1.55-6.1-5.5 3.3 3.3-5.5L2.2 12l6.05-1.5L4.95 5l5.5 3.3z"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></g></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M15 12H9M15 15.5H9M15 19h-3"/></g></symbol>
+    <symbol id="i-story" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3.5" width="16" height="17" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h5"/><circle cx="16.5" cy="16.5" r="0.6" fill="currentColor"/></g></symbol>
+    <symbol id="i-replay" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/></g></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></g></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></g></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></g></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <div class="logo"><svg><use href="#i-spark"/></svg></div>
+      <div><b>Claude Skills</b><small>مهارات Claude المخصّصة</small></div>
+    </div>
+    <button class="btn-replay replay-m" data-replay aria-label="إعادة العرض"><svg><use href="#i-replay"/></svg>إعادة</button>
+    <nav class="nav" aria-label="الشاشات">
+      <div class="nav-label">المستودع</div>
+      <button data-go="overview"><span class="ic"><svg><use href="#i-grid"/></svg></span><span class="tx"><b>نظرة عامة</b><small>claude-skills</small></span></button>
+      <div class="nav-label">المهارات</div>
+      <button data-go="arabic-docx-rtl"><span class="ic"><svg><use href="#i-doc"/></svg></span><span class="tx"><b>مستند وورد عربي</b><small>arabic-docx-rtl</small></span></button>
+      <button data-go="nusuk-user-story"><span class="ic"><svg><use href="#i-story"/></svg></span><span class="tx"><b>ستوري نسك</b><small>nusuk-user-story</small></span></button>
+    </nav>
+    <div class="side-foot">مهارات Claude بصيغة SKILL.md<span class="mono">engmalsawat-cpu/claude-skills</span></div>
+  </aside>
+
+  <main class="main">
+    <header class="top">
+      <div class="crumb"><span class="mono">claude-skills</span><span>/</span><b id="crumb">نظرة عامة</b></div>
+      <button class="btn-replay" data-replay><svg><use href="#i-replay"/></svg>إعادة العرض</button>
+    </header>
+
+    <div class="screens">
+      <!-- ================= OVERVIEW ================= -->
+      <section class="screen ov" id="s-overview" aria-label="نظرة عامة">
+        <div class="ov-main">
+          <span class="eyebrow">مستودع claude-skills · مهارتان</span>
+          <h1>مهارتان تعلّمان Claude طريقتي في الشغل</h1>
+          <p class="lead">ملفات SKILL.md أكتبها مرة وحدة، ويستدعيها Claude من نفسه متى ما احتاجها: وحدة تضبط اتجاه مستندات وورد العربية من جذورها، والثانية تكتب قصص المستخدم بقالب نسك المعتمد.</p>
+          <div class="steps">
+            <div class="step"><i>١</i><span>تكتب طلبك بكلامك العادي</span></div>
+            <div class="step"><i>٢</i><span>Claude يطابقه مع وصف المهارة ويحمّلها</span></div>
+            <div class="step"><i>٣</i><span>يطبّق قواعدها ويسلّمك الناتج</span></div>
+          </div>
+          <div class="cards">
+            <article class="card" data-skill="docx">
+              <div class="c-top">
+                <div class="c-ic" style="background:#E3ECF7;color:#2B5797"><svg><use href="#i-doc"/></svg></div>
+                <div><span class="c-name">arabic-docx-rtl</span><span class="c-kind">طبقة اتجاه فوق مهارة docx</span></div>
+              </div>
+              <h3>مستندات وورد عربية باتجاه صحيح</h3>
+              <p>تضبط الفقرة والنص والجدول على RTL، فتطلع النقاط على اليمين والأعمدة مرتّبة من اليمين — بدون عكس يدوي للمصفوفات.</p>
+              <dl class="kv">
+                <dt>يتفعّل عند</dt><dd><span class="tag">مستند عربي</span><span class="tag">جدول عربي</span><span class="tag">عربي وورد</span><span class="tag">RTL docx</span></dd>
+                <dt>الناتج</dt><dd>ملف Word مبني بـ docx-js، وأربع دوال جاهزة</dd>
+              </dl>
+              <div class="files"><span>SKILL.md</span><span>helper.js</span></div>
+              <div class="c-act">
+                <button class="b-pri" data-go="arabic-docx-rtl">شاهدها تعمل <svg><use href="#i-arrow"/></svg></button>
+                <button class="b-sec" data-peek="docx" aria-pressed="false">SKILL.md</button>
+              </div>
+            </article>
+            <article class="card" data-skill="story">
+              <div class="c-top">
+                <div class="c-ic" style="background:var(--accent-soft);color:var(--accent-ink)"><svg><use href="#i-story"/></svg></div>
+                <div><span class="c-name">nusuk-user-story</span><span class="c-kind">كاتب قصص المستخدم</span></div>
+              </div>
+              <h3>ستوري جاهزة للتطوير بقالب نسك</h3>
+              <p>تحوّل اسم ميزة أو سطرًا واحدًا إلى قصة مستخدم كاملة بالإنجليزية: سيناريوهات Gherkin، قواعد قابلة للاختبار، حالات حدّية، واعتماديات.</p>
+              <dl class="kv">
+                <dt>يتفعّل عند</dt><dd><span class="tag">اكتب ستوري</span><span class="tag">يوزر ستوري</span><span class="tag">قصة مستخدم</span><span class="tag">فصّلها</span></dd>
+                <dt>الناتج</dt><dd>Markdown بالإنجليزية، وجدول نصوص أولية لفريق UX</dd>
+              </dl>
+              <div class="files"><span>SKILL.md</span><span>references/template-examples.md</span></div>
+              <div class="c-act">
+                <button class="b-pri" data-go="nusuk-user-story">شاهدها تعمل <svg><use href="#i-arrow"/></svg></button>
+                <button class="b-sec" data-peek="story" aria-pressed="false">SKILL.md</button>
+              </div>
+            </article>
+          </div>
+        </div>
+        <div class="stage">
+          <div class="panel">
+            <div class="p-head">
+              <div class="fi sk"><svg><use href="#i-file"/></svg></div>
+              <div class="p-title"><b id="peekName">arabic-docx-rtl</b><small>نظرة على ملفات المهارة</small></div>
+            </div>
+            <div class="p-head" style="min-height:0;padding:7px 10px;background:var(--paper)"><div class="tabs" id="peekTabs"></div></div>
+            <div class="p-body"><pre class="peek" id="peek"></pre></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= ARABIC DOCX ================= -->
+      <section class="screen work" id="s-arabic-docx-rtl" aria-label="مستند وورد عربي">
+        <div class="chat">
+          <div class="thread"></div>
+          <div class="composer"><div class="cin"><span class="ctext"></span><span class="caret"></span><span class="ph">اكتب رسالتك…</span></div><button class="send" aria-label="إرسال" tabindex="-1"><svg><use href="#i-send"/></svg></button></div>
+        </div>
+        <div class="stage">
+          <div class="panel">
+            <div class="p-head">
+              <div class="fi word"><svg><use href="#i-doc"/></svg></div>
+              <div class="p-title"><b>ملخص-الورشة.docx</b><small>docx-js + arabic-docx-rtl</small></div>
+              <div class="seg" role="group" aria-label="مقارنة">
+                <button data-mode="broken" aria-pressed="false"><span class="dot bad"></span>بدون المهارة</button>
+                <button data-mode="fixed" aria-pressed="true"><span class="dot"></span>مع المهارة</button>
+              </div>
+            </div>
+            <div class="p-body" id="docBody"><div class="desk" id="desk"><div class="stamp"><span>هكذا يطلع بدون طبقة الاتجاه</span></div><div class="page" id="page"></div></div></div>
+            <div class="legend" id="legend"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= NUSUK USER STORY ================= -->
+      <section class="screen work" id="s-nusuk-user-story" aria-label="ستوري نسك">
+        <div class="chat">
+          <div class="thread"></div>
+          <div class="composer"><div class="cin"><span class="ctext"></span><span class="caret"></span><span class="ph">اكتب رسالتك…</span></div><button class="send" aria-label="إرسال" tabindex="-1"><svg><use href="#i-send"/></svg></button></div>
+        </div>
+        <div class="stage">
+          <div class="panel">
+            <div class="p-head">
+              <div class="fi md"><svg><use href="#i-story"/></svg></div>
+              <div class="p-title"><b>قصة المستخدم</b><small>Markdown · English</small></div>
+              <div class="seg" role="group" aria-label="طريقة العرض">
+                <button data-view="preview" aria-pressed="true">معاينة</button>
+                <button data-view="raw" aria-pressed="false">Markdown</button>
+              </div>
+            </div>
+            <div class="p-body" id="storyBody"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+(() => {
+'use strict';
+const SCREENS = [
+  { id: 'overview', label: 'نظرة عامة' },
+  { id: 'arabic-docx-rtl', label: 'مستند وورد عربي' },
+  { id: 'nusuk-user-story', label: 'ستوري نسك' }
+];
+const SLUG = 'claude-skills';
+const params = new URLSearchParams(location.search);
+const THUMB = params.get('mode') === 'thumb';
+const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+let REDUCED = mq.matches;
+if (mq.addEventListener) mq.addEventListener('change', e => { REDUCED = e.matches; });
+if (THUMB) document.documentElement.classList.add('thumb');
+const speed = () => REDUCED ? 0 : (THUMB ? 0.24 : 1);
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const SPARK = '<svg><use href="#i-spark"/></svg>';
+
+/* ---------- cancellable timeline helpers ---------- */
+let token = 0;
+const CANCEL = { cancelled: true };
+const guard = t => { if (t !== token) throw CANCEL; };
+function sleep(t, ms) {
+  const sp = speed();
+  guard(t);
+  if (!sp) return Promise.resolve();
+  return new Promise((res, rej) => setTimeout(() => (t === token ? res() : rej(CANCEL)), ms * sp));
+}
+async function typeText(t, node, text, cps, follow) {
+  const sp = speed();
+  guard(t);
+  if (!sp) { node.appendData(text); follow && follow(); return; }
+  const tick = 30;
+  const step = Math.max(1, Math.round((cps * tick) / 1000 / sp));
+  for (let i = 0; i < text.length; i += step) {
+    guard(t);
+    node.appendData(text.slice(i, i + step));
+    follow && follow();
+    await new Promise(r => setTimeout(r, tick));
+  }
+  guard(t);
+}
+const tnode = host => { const n = document.createTextNode(''); host.appendChild(n); return n; };
+
+/* rich text: [[a]] assumption pill, [[uN]] UX copy pill, {{..}} Arabic isolate, **..** bold */
+function parts(str) {
+  return str.split(/(\[\[a\]\]|\[\[u\d\]\]|\{\{.+?\}\}|\*\*.+?\*\*)/).filter(Boolean).map(p => {
+    if (p === '[[a]]') return { pill: 'asm' };
+    let m = p.match(/^\[\[u(\d)\]\]$/); if (m) return { pill: 'ux', n: m[1] };
+    m = p.match(/^\{\{(.+)\}\}$/); if (m) return { text: m[1], cls: 'ar' };
+    m = p.match(/^\*\*(.+)\*\*$/); if (m) return { text: m[1], cls: 'b' };
+    return { text: p };
+  });
+}
+async function typeRich(t, host, str, cps, follow) {
+  for (const p of parts(str)) {
+    if (p.pill) {
+      host.appendChild(p.pill === 'asm' ? el('span', 'pill asm', '[assumption]') : el('span', 'pill ux', 'UX Copy #' + p.n));
+      follow && follow();
+      await sleep(t, 70);
+      continue;
+    }
+    let target = host;
+    if (p.cls) {
+      target = el(p.cls === 'b' ? 'b' : 'span', p.cls === 'ar' ? 'ar' : '');
+      if (p.cls === 'ar') target.dir = 'rtl';
+      host.appendChild(target);
+    }
+    await typeText(t, tnode(target), p.text, cps, follow);
+  }
+}
+const mdInline = s => s.replace(/\[\[a\]\]/g, '**[assumption]**').replace(/\[\[u(\d)\]\]/g, '🟣 **[UX Copy #$1]**').replace(/\{\{(.+?)\}\}/g, '$1');
+
+/* ---------- chat helpers ---------- */
+function chatParts(S) {
+  const thread = $('.thread', S);
+  const follow = () => { thread.scrollTop = thread.scrollHeight; };
+  return { thread, follow };
+}
+async function composerSend(t, S, text) {
+  const comp = $('.composer', S), ct = $('.ctext', S), send = $('.send', S);
+  const { thread, follow } = chatParts(S);
+  ct.textContent = '';
+  await sleep(t, 350);
+  comp.classList.add('typing');
+  await typeText(t, tnode(ct), text, 30);
+  await sleep(t, 380);
+  send.classList.add('pop');
+  await sleep(t, 140);
+  send.classList.remove('pop');
+  comp.classList.remove('typing');
+  ct.textContent = '';
+  const m = el('div', 'msg user'); m.appendChild(el('div', 'bubble')).textContent = text;
+  thread.appendChild(m); follow();
+  await sleep(t, 420);
+}
+function aiMsg(thread) {
+  const m = el('div', 'msg ai');
+  m.appendChild(el('div', 'av', SPARK));
+  const body = m.appendChild(el('div', 'ai-body'));
+  thread.appendChild(m);
+  return body;
+}
+function skillChip(host, verb, name) {
+  const c = el('span', 'skill', '<span class="st"></span><span class="vb"></span><code></code>');
+  $('.vb', c).textContent = verb; $('code', c).textContent = name;
+  host.appendChild(c);
+  return c;
+}
+const chipDone = (c, verb) => { c.classList.add('done'); $('.vb', c).textContent = verb; };
+
+/* =====================================================================
+   SCREEN: OVERVIEW
+   ===================================================================== */
+const PEEK = {
+  docx: {
+    name: 'arabic-docx-rtl',
+    files: {
+      'SKILL.md': { kind: 'md', text:
+`---
+name: arabic-docx-rtl
+description: >-
+  Use this skill whenever creating Arabic (or any right-to-left) Word .docx files
+  with docx-js, to guarantee correct RTL rendering — bullets on the RIGHT of the
+  text, proper paragraph and run direction, and genuine RTL tables whose columns
+  flow right-to-left automatically. Trigger on: Arabic Word document, عربي وورد,
+  مستند عربي, جدول عربي, RTL docx … Use ALONGSIDE the docx skill.
+---
+
+# Arabic / RTL Word documents (docx-js)
+
+Word/docx engines default to **LTR (English)**. Arabic is **RTL**.
+**Right-alignment alone is NOT enough** — direction is three
+independent layers, plus a table layer.
+
+## The 4 rules (set ALL of them)
+
+1. **Paragraph direction** — \`bidirectional: true\` (emits \`<w:bidi/>\`)
+2. **Run direction** — \`rightToLeft: true\` (emits \`<w:rtl/>\`)
+   **This is the one most people miss.**
+3. **Alignment** — \`alignment: AlignmentType.RIGHT\` — visual only.
+4. **Table direction** — \`visuallyRightToLeft: true\` (emits \`<w:bidiVisual/>\`)
+   Feed columns in logical order. **Never reverse arrays manually.**
+
+## Common mistakes → fix
+| Bullet • on the LEFT   | run not RTL   | add rightToLeft: true        |
+| Columns reversed       | table not RTL | add visuallyRightToLeft      |
+| Indent on wrong side   | indent.left   | use indent: { start, hanging } |
+
+## QA
+soffice --headless --convert-to pdf out.docx  # bullets RIGHT, columns RTL` },
+      'helper.js': { kind: 'js', text:
+`// Arabic / RTL helpers for docx-js.
+const RTL_FONT = "Arial";
+
+// One RTL paragraph of plain text.
+function rtlPara(text, opts = {}) {
+  return new Paragraph({
+    bidirectional: true,
+    alignment: opts.align || AlignmentType.RIGHT,
+    children: [new TextRun({
+      text,
+      font: opts.font || RTL_FONT,
+      rightToLeft: true,                // ← the rule most people miss
+    })],
+  });
+}
+
+// Array of RTL bullet paragraphs. Bullet "•" renders on the RIGHT.
+function rtlBullets(items, opts = {}) { … }
+
+// Full RTL table. headers in LOGICAL order (first = rightmost column).
+function rtlTable(headers, rows, opts = {}) {
+  …
+  return new Table({
+    visuallyRightToLeft: true,          // ← genuine RTL table
+    rows: [headerRow, ...bodyRows],
+  });
+}
+
+module.exports = { rtlPara, rtlBullets, rtlCell, rtlTable, RTL_FONT };` }
+    }
+  },
+  story: {
+    name: 'nusuk-user-story',
+    files: {
+      'SKILL.md': { kind: 'md', text:
+`---
+name: nusuk-user-story
+description: Write detailed, development-ready user stories for Nusuk
+  services and features using the approved User Story template …
+  Use whenever the user asks to write, draft, detail, or expand a user
+  story, ستوري, يوزر ستوري, or قصة مستخدم — even if they only name a
+  feature and say "فصّلها". Also covers light delta/update stories.
+---
+
+# Nusuk User Story Writer
+
+## Fixed output rules
+1. **Language: English, always** — even when the request is Arabic.
+2. **Format: markdown text.** Never write the story into Notion.
+3. **Two modes.** Full story, or a thin **delta story** for flow updates.
+
+## Template structure (full story)
+1. **User Story** — As a [user], I want to [capability], so that [benefit].
+2. **Context / Problem**
+3. **Acceptance Criteria (Gherkin Format)**
+4. **Validations and Business Rules**
+5. **Edge Cases** — Scenario | System Behavior
+6. **Dependencies**
+
+## Before writing
+- **The reuse question always comes first:** هل فيه فلو قائم نعيد استخدامه؟
+- Max 4 short questions. Never run a long interview.
+
+## Writing craft rules
+- Numbers you weren't given are marked **[assumption]**.
+- User-facing messages are flagged 🟣 **[UX Copy #n]**.` },
+      'references/template-examples.md': { kind: 'md', text:
+`# Nusuk User Story — Template Skeleton and Calibration Example
+
+## Skeleton
+
+## [Story Title]
+
+**User Story**
+*As a [user type/persona], I want to [do something], so that [goal].*
+
+**Context / Problem**
+**Why Now?** (optional)
+**Personas Affected** (optional)
+**Proposed Solution** (optional)
+
+**Acceptance Criteria (Gherkin Format)**
+- **[Scenario Name]**
+  Given [context],
+  When [action],
+  Then [expected result].
+
+**Validations and Business Rules**
+**Edge Cases**
+**Dependencies**
+**Risks / Assumptions** (optional)
+
+## Patterns to copy
+- Scenario names are short and diagnostic (**Limit Validation**).
+- Rules carry concrete numbers — unstated numbers get **[assumption]**.
+- Edge cases show operational reality: timeouts, retries, fallbacks.` }
+    }
+  }
+};
+const isoAr = s => s.replace(/[\u0600-\u06FF][\u0600-\u06FF\s]*[\u0600-\u06FF]|[\u0600-\u06FF]/g, m => '<bdi>' + m + '</bdi>');
+function hlMd(line) {
+  let s = isoAr(esc(line));
+  if (/^---$/.test(line)) return '<span class="m-c">' + s + '</span>';
+  if (/^#{1,3} /.test(line)) return '<span class="m-h">' + s + '</span>';
+  s = s.replace(/^(name|description):/, '<span class="y-k">$1</span>:');
+  s = s.replace(/`([^`]+)`/g, '<span class="m-bt">$1</span>');
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<span class="m-b">$1</span>');
+  s = s.replace(/(#.*)$/, (m) => /^\s*#/.test(line) ? m : '<span class="m-c">' + m + '</span>');
+  return s;
+}
+function hlJs(line) {
+  let s = isoAr(esc(line));
+  const ci = s.indexOf('//');
+  let comment = '';
+  if (ci >= 0) { comment = '<span class="j-c">' + s.slice(ci) + '</span>'; s = s.slice(0, ci); }
+  s = s.replace(/"[^"]*"/g, m => '<span class="j-s">' + m + '</span>');
+  s = s.replace(/\b(const|function|return|new|true|module)\b/g, '<span class="j-k">$1</span>');
+  return s + comment;
+}
+let peekSkill = 'docx', peekFile = 'SKILL.md';
+function renderPeek(skill, file, animate) {
+  peekSkill = skill; peekFile = file;
+  const P = PEEK[skill];
+  $('#peekName').textContent = P.name;
+  const tabs = $('#peekTabs'); tabs.innerHTML = '';
+  Object.keys(P.files).forEach(f => {
+    const b = el('button'); b.textContent = f; b.dataset.file = f;
+    b.setAttribute('aria-pressed', f === file ? 'true' : 'false');
+    tabs.appendChild(b);
+  });
+  $$('#s-overview .card').forEach(c => c.classList.toggle('sel', c.dataset.skill === skill));
+  $$('#s-overview [data-peek]').forEach(b => b.setAttribute('aria-pressed', b.dataset.peek === skill ? 'true' : 'false'));
+  const F = P.files[file];
+  const pre = $('#peek'); pre.innerHTML = '';
+  pre.parentElement.scrollTop = 0;
+  const lines = F.text.split('\n').map(l => {
+    const d = el('span', 'l' + (animate ? ' pend' : ''), (F.kind === 'js' ? hlJs(l) : hlMd(l)) || '');
+    pre.appendChild(d);
+    return d;
+  });
+  return lines;
+}
+async function playOverview(t) {
+  const S = $('#s-overview');
+  S.classList.remove('in'); void S.offsetWidth; S.classList.add('in');
+  $('.ov-main', S).scrollTop = 0;
+  const seq = [['docx', 'SKILL.md'], ['story', 'SKILL.md']];
+  for (let k = 0; k < seq.length; k++) {
+    const lines = renderPeek(seq[k][0], seq[k][1], speed() > 0);
+    await sleep(t, k ? 120 : 420);
+    for (const l of lines) { guard(t); l.classList.remove('pend'); await sleep(t, 34); }
+    if (k < seq.length - 1) await sleep(t, 1500);
+  }
+}
+document.addEventListener('click', e => {
+  const pk = e.target.closest('[data-peek]');
+  if (pk) { token++; renderPeek(pk.dataset.peek, 'SKILL.md', false); return; }
+  const tb = e.target.closest('#peekTabs button');
+  if (tb) { token++; renderPeek(peekSkill, tb.dataset.file, false); }
+});
+
+/* =====================================================================
+   SCREEN: ARABIC DOCX RTL
+   ===================================================================== */
+const DOC = {
+  title: 'ملخص ورشة عمل: تحسين تجربة الحجز',
+  meta: 'التاريخ: 12 مارس 2026 — الحضور: 14 مشاركًا',
+  h1: 'أبرز النقاط',
+  bullets: ['ارتفعت نسبة إكمال الحجز إلى 40% بعد تبسيط الخطوات', 'اعتماد رمز التحقق OTP بدل كلمة المرور عند الدخول', 'دراسة مسار Fast Track لكبار السن وذوي الإعاقة'],
+  h2: 'خطة العمل',
+  head: ['المهمة', 'المسؤول', 'الموعد', 'الحالة'],
+  rows: [['تبسيط خطوات الحجز', 'فريق المنتج', 'أبريل', 'قيد التنفيذ'], ['تقرير شركاء B2B', 'فريق البيانات', 'مايو', 'مخطط له'], ['اختبار رسائل OTP', 'فريق الجودة', 'يونيو', 'مخطط له']]
+};
+const CODE = [
+  '<span class="tk-k">const</span> { rtlPara, rtlBullets, rtlTable }',
+  '  = <span class="tk-f">require</span>(<span class="tk-s">"./helper.js"</span>);',
+  '',
+  '<span class="tk-k">const</span> children = [',
+  '  <span class="tk-f">rtlPara</span>(<span class="tk-s">"ملخص ورشة العمل"</span>, { bold: <span class="tk-k">true</span> }),',
+  '  ...<span class="tk-f">rtlBullets</span>(highlights), <span class="tk-c">// • on the right</span>',
+  '  <span class="tk-f">rtlTable</span>(',
+  '    [<span class="tk-s">"المهمة"</span>, <span class="tk-s">"المسؤول"</span>, <span class="tk-s">"الموعد"</span>, <span class="tk-s">"الحالة"</span>],',
+  '    rows, { headerFill: <span class="tk-s">"1B6B4A"</span> }',
+  '  ), <span class="tk-c">// logical order — no reversing</span>',
+  '];'
+];
+const RULES = [
+  ['bidirectional: true', '&lt;w:bidi/&gt;', 'اتجاه الفقرة'],
+  ['rightToLeft: true', '&lt;w:rtl/&gt;', 'اتجاه النص — القاعدة اللي ينساها أغلب الناس'],
+  ['alignment: RIGHT', '', 'المحاذاة — شكلية فقط، ما تصلح الاتجاه وحدها'],
+  ['visuallyRightToLeft: true', '&lt;w:bidiVisual/&gt;', 'اتجاه الجدول — الأعمدة تترتب من اليمين تلقائيًا']
+];
+let docMode = 'fixed', userToggled = false;
+
+function docPara(text, cls, opt = {}) {
+  const p = el('p', 'dp rv pend ' + cls);
+  p.dataset.bidi = '';
+  if (opt.bullet) { p.appendChild(el('span', 'blt', '•')); p.appendChild(document.createTextNode('\u00A0\u00A0' + text)); }
+  else p.appendChild(document.createTextNode(text));
+  if (opt.period) p.appendChild(el('span', 'pd', '.'));
+  return p;
+}
+function buildDoc() {
+  const page = $('#page'); page.innerHTML = '';
+  const out = {};
+  out.title = page.appendChild(docPara(DOC.title, 'd-title'));
+  out.meta = page.appendChild(docPara(DOC.meta, 'd-meta', { period: true }));
+  out.h1 = page.appendChild(docPara(DOC.h1, 'd-h'));
+  out.bullets = DOC.bullets.map(b => page.appendChild(docPara(b, 'd-b', { bullet: true, period: true })));
+  out.h2 = page.appendChild(docPara(DOC.h2, 'd-h'));
+  const tbl = el('table', 'dt rv pend'); tbl.dataset.bidi = '';
+  const thead = tbl.appendChild(el('thead')).appendChild(el('tr'));
+  DOC.head.forEach((h, i) => { const th = el('th'); th.textContent = h; th.dataset.bidi = ''; th.style.viewTransitionName = 'dc-0-' + i; thead.appendChild(th); });
+  const tb = tbl.appendChild(el('tbody'));
+  out.rows = DOC.rows.map((r, ri) => {
+    const tr = el('tr', 'pend');
+    r.forEach((c, ci) => {
+      const td = el('td'); td.style.viewTransitionName = 'dc-' + (ri + 1) + '-' + ci;
+      const p = docPara(c, '', { bullet: true }); p.classList.remove('pend', 'rv');
+      td.appendChild(p); tr.appendChild(td);
+    });
+    tb.appendChild(tr); return tr;
+  });
+  out.table = page.appendChild(tbl);
+  out.cursor = page.appendChild(el('span', 'cursor'));
+  applyMode(docMode);
+  return out;
+}
+function applyMode(m) {
+  docMode = m;
+  const desk = $('#desk');
+  desk.classList.toggle('broken', m === 'broken');
+  $$('[data-bidi]', desk).forEach(e => { e.dir = m === 'broken' ? 'ltr' : 'rtl'; });
+  $$('#s-arabic-docx-rtl [data-mode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === m ? 'true' : 'false'));
+  renderLegend();
+}
+let legendReady = false;
+function renderLegend() {
+  const lg = $('#legend'); lg.innerHTML = '';
+  if (!legendReady) { lg.appendChild(el('span', 'note', 'المستند يُبنى الآن…')); return; }
+  const items = docMode === 'broken'
+    ? [['bad', 'النقطة • على اليسار'], ['bad', 'أعمدة الجدول معكوسة'], ['bad', 'علامة الترقيم في أول السطر']]
+    : [['ok', 'النقطة • على اليمين'], ['ok', 'الأعمدة من اليمين بلا عكس يدوي'], ['ok', 'الترقيم في مكانه']];
+  items.forEach(([c, txt]) => lg.appendChild(el('span', c, (c === 'ok' ? '✓ ' : '✕ ') + txt)));
+}
+function setMode(m, viaUser) {
+  if (viaUser) userToggled = true;
+  if (m === docMode) return;
+  const run = () => applyMode(m);
+  if (document.startViewTransition && !REDUCED) {
+    const tr = document.startViewTransition(run);
+    ['ready', 'finished', 'updateCallbackDone'].forEach(k => tr[k] && tr[k].catch(() => {}));
+  } else run();
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('#s-arabic-docx-rtl [data-mode]');
+  if (b) setMode(b.dataset.mode, true);
+});
+const show = n => n && n.classList.remove('pend');
+
+async function playDocx(t) {
+  const S = $('#s-arabic-docx-rtl');
+  const { thread, follow } = chatParts(S);
+  const docBody = $('#docBody');
+  const reveal = n => { const r = n.getBoundingClientRect(), b = docBody.getBoundingClientRect(); if (r.bottom > b.bottom - 12) docBody.scrollTop += r.bottom - b.bottom + 28; };
+  await composerSend(t, S, 'أبغى ملف وورد عربي لملخص ورشة العمل: النقاط الرئيسية وجدول بالمهام والمسؤولين');
+
+  const body = aiMsg(thread);
+  const chips = body.appendChild(el('div', 'skills'));
+  const c1 = skillChip(chips, 'يقرأ', 'docx');
+  await sleep(t, 380);
+  const c2 = skillChip(chips, 'يقرأ', 'arabic-docx-rtl');
+  follow();
+  await sleep(t, 650); chipDone(c1, 'قرأ');
+  await sleep(t, 350); chipDone(c2, 'قرأ');
+  const p1 = body.appendChild(el('p'));
+  await typeText(t, tnode(p1), 'أبنيه باستخدام docx-js، وأضبط الاتجاه على كل الطبقات — المحاذاة لليمين وحدها ما تكفي.', 75, follow);
+  await sleep(t, 250);
+
+  const cb = body.appendChild(el('div', 'codeblk', '<div class="cb-h"><span>build.js</span><span>javascript</span></div><pre></pre>'));
+  const pre = $('pre', cb);
+  const lines = CODE.map(h => { const s = el('span', 'ln', h || ' '); pre.appendChild(s); return s; });
+  follow();
+  const D = buildDoc();
+  const triggers = { 4: [D.title, D.meta], 5: [D.h1, ...D.bullets], 7: [D.h2, D.table], 8: D.rows };
+  for (let i = 0; i < lines.length; i++) {
+    guard(t);
+    lines.forEach(l => l.classList.remove('hot'));
+    lines[i].classList.add('on', 'hot');
+    follow();
+    const tg = triggers[i];
+    if (tg) { for (const n of tg) { show(n); reveal(n); await sleep(t, 210); } }
+    else await sleep(t, 170);
+  }
+  lines.forEach(l => l.classList.remove('hot'));
+  D.cursor.remove();
+  legendReady = true; renderLegend();
+
+  const rules = body.appendChild(el('div', 'rules', '<div class="rh">طبقات الاتجاه الأربع</div>'));
+  const rr = RULES.map(([c, x, d]) => rules.appendChild(el('div', 'rule', '<span class="ck"></span><span class="rc">' + c + (x ? ' <i>→ ' + x + '</i>' : '') + '</span><span class="rd">' + d + '</span>')));
+  follow();
+  for (const r of rr) { await sleep(t, 300); r.classList.add('on'); }
+  await sleep(t, 300);
+  const qa = body.appendChild(el('div', 'qa', '<span>✓</span><span><b>QA:</b> حوّلته إلى PDF وراجعت الصفحة الأولى — النقاط على اليمين، والأعمدة تُقرأ من اليمين لليسار.</span>'));
+  void qa; follow();
+  await sleep(t, 500);
+  if (!speed()) { body.appendChild(el('p')).textContent = 'بدّل بين «بدون المهارة» و«مع المهارة» أعلى المعاينة لتشوف الفرق.'; follow(); return; }
+  const p2 = body.appendChild(el('p'));
+  await typeText(t, tnode(p2), 'وللمقارنة، هذا شكله لو اكتفينا بالمحاذاة لليمين:', 75, follow);
+  if (userToggled) return;
+  await sleep(t, 300);
+  docBody.scrollTop = 0;
+  setMode('broken');
+  await sleep(t, THUMB ? 6500 : 2600);
+  if (userToggled) return;
+  setMode('fixed');
+  await sleep(t, 500);
+  const p3 = body.appendChild(el('p'));
+  await typeText(t, tnode(p3), 'بدّل بين الحالتين من أعلى المعاينة لتشوف الفرق بنفسك.', 75, follow);
+}
+
+/* =====================================================================
+   SCREEN: NUSUK USER STORY
+   ===================================================================== */
+const STORY = {
+  title: 'Umrah Permit Expiry Reminder',
+  blocks: [
+    { k: 'sec', t: 'User Story' },
+    { k: 'quote', t: 'As an Umrah pilgrim holding an issued permit ({{تصريح العمرة}} — Umrah permit), I want to be reminded before my permit window closes, so that I can perform Umrah within it instead of missing it.' },
+    { k: 'sec', t: 'Context / Problem' },
+    { k: 'p', t: 'Each Umrah permit is valid for a fixed time window. Pilgrims who lose track of it miss the window, the slot goes unused, and many contact support to ask for a new permit. Today the window time is visible only inside the permit details screen.' },
+    { k: 'sec', t: 'Acceptance Criteria (Gherkin Format)' },
+    { k: 'ac', n: 'Advance Reminder', g: [['Given', 'I hold an active Umrah permit,'], ['When', 'my window starts in 24 hours [[a]],'], ['Then', 'I receive a push notification [[u1]] with the window time and a link to my permit.']] },
+    { k: 'ac', n: 'Closing Reminder', g: [['Given', 'my permit window has started,'], ['When', '2 hours remain before it closes [[a]],'], ['Then', 'I receive a second push notification [[u2]].']] },
+    { k: 'ac', n: 'Cancelled or Rescheduled Permit', g: [['Given', 'I cancel or reschedule my permit,'], ['When', 'a reminder queued for the old window comes due,'], ['Then', 'it is not sent.']] },
+    { k: 'ac', n: 'Notifications Turned Off', g: [['Given', 'push notifications are off on my device,'], ['When', 'a reminder comes due and the window is still open,'], ['Then', 'I see an in-app banner [[u3]] the next time I open the app.']] },
+    { k: 'sec', t: 'Validations and Business Rules' },
+    { k: 'li', t: 'Reminders are sent only for permits in **Active** status in the permit system.' },
+    { k: 'li', t: 'Maximum 2 reminders per permit [[a]].' },
+    { k: 'li', t: 'No advance reminder when the permit is issued less than 24 hours before its window [[a]].' },
+    { k: 'li', t: 'Reminder language follows the user’s app language.' },
+    { k: 'li', t: 'Tapping a reminder opens the permit details screen directly.' },
+    { k: 'sec', t: 'Edge Cases' },
+    { k: 'table', head: ['Scenario', 'System Behavior'], rows: [
+      ['Permit rescheduled after a reminder is queued', 'Drop the queued reminder and schedule a new one for the new window.'],
+      ['Device offline at send time', 'Deliver on reconnect only if the window is still open; otherwise discard.'],
+      ['Same trigger fires twice (retry)', 'One reminder per permit and type — an idempotency key blocks duplicates.'],
+      ['Several permits under one account (companions)', 'One reminder per permit, naming the companion.']
+    ] },
+    { k: 'sec', t: 'Dependencies' },
+    { k: 'li', t: 'Umrah permit system — permit status and window times (owner to confirm).' },
+    { k: 'li', t: 'Notification service — push and in-app banners.' },
+    { k: 'li', t: 'Nusuk app — deep link to permit details.' },
+    { k: 'sec', t: 'Risks / Assumptions' },
+    { k: 'li', t: 'The 24h and 2h timings are assumptions — confirm with the product owner.' },
+    { k: 'li', t: 'Permit status changes must reach the reminder scheduler in near real time.' },
+    { k: 'ux', rows: [
+      ['1', 'Push — 24h before', 'Umrah is tomorrow, with the time', 'موعد عمرتك غدًا الساعة [الوقت]. اعرض تصريحك', 'Your Umrah is tomorrow at [time]. View your permit'],
+      ['2', 'Push — 2h left', 'The window closes soon', 'باقي ساعتان على نهاية موعد عمرتك. اعرض تصريحك', '2 hours left in your Umrah window. View your permit'],
+      ['3', 'In-app banner', 'Upcoming window when push is off', 'موعد عمرتك [التاريخ] الساعة [الوقت]. فعّل الإشعارات لتصلك التذكيرات', 'Your Umrah is on [date] at [time]. Turn on notifications to get reminders']
+    ] }
+  ]
+};
+let storyShown = 0, storyView = 'preview';
+function storyMd(n) {
+  const out = ['## ' + STORY.title, ''];
+  STORY.blocks.slice(0, n).forEach((b, i) => {
+    switch (b.k) {
+      case 'sec': if (i) out.push(''); out.push('**' + b.t + '**'); break;
+      case 'quote': out.push('*' + mdInline(b.t) + '*'); break;
+      case 'p': out.push(mdInline(b.t)); break;
+      case 'ac': out.push('- **' + b.n + '**'); b.g.forEach(([k, v]) => out.push('  ' + k + ' ' + mdInline(v))); break;
+      case 'li': out.push('- ' + mdInline(b.t)); break;
+      case 'table': out.push('', '| ' + b.head.join(' | ') + ' |', '|---|---|'); b.rows.forEach(r => out.push('| ' + r.join(' | ') + ' |')); break;
+      case 'ux': out.push('', '**🟣 UX Copy Requests — for فريق UX**', '| # | Where it appears | What it must convey | Suggested text (نص أولي) |', '|---|---|---|---|');
+        b.rows.forEach(r => out.push('| ' + r[0] + ' | ' + r[1] + ' | ' + r[2] + ' | AR: ' + r[3] + ' / EN: ' + r[4] + ' |')); break;
+    }
+  });
+  return out.join('\n');
+}
+function renderRaw() {
+  const raw = $('#storyBody .raw');
+  if (!raw) return;
+  raw.innerHTML = esc(storyMd(storyShown)).split('\n').map(l => /^(## |\*\*)/.test(l) ? '<span class="h">' + l + '</span>' : l).join('\n');
+}
+function setStoryView(v) {
+  storyView = v;
+  $$('#s-nusuk-user-story [data-view]').forEach(b => b.setAttribute('aria-pressed', b.dataset.view === v ? 'true' : 'false'));
+  const art = $('#storyBody .story'), raw = $('#storyBody .raw');
+  if (!art) return;
+  art.hidden = v !== 'preview'; raw.hidden = v !== 'raw';
+  if (v === 'raw') renderRaw();
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('#s-nusuk-user-story [data-view]');
+  if (b) setStoryView(b.dataset.view);
+});
+function resetStoryPanel() {
+  storyShown = 0;
+  $('#storyBody').innerHTML = '<div class="empty"><div><svg><use href="#i-story"/></svg>تظهر قصة المستخدم هنا</div></div>';
+  setStoryView('preview');
+}
+async function streamStory(t) {
+  const host = $('#storyBody');
+  host.innerHTML = '';
+  const art = host.appendChild(el('article', 'story')); art.lang = 'en';
+  const raw = host.appendChild(el('pre', 'raw')); raw.hidden = storyView !== 'raw'; art.hidden = storyView === 'raw';
+  const follow = () => { host.scrollTop = host.scrollHeight; };
+  const CPS = 300;
+  await typeText(t, tnode(art.appendChild(el('h2', 'st-title'))), STORY.title, 120, follow);
+  let ul = null;
+  for (const b of STORY.blocks) {
+    guard(t);
+    if (b.k !== 'li') ul = null;
+    if (b.k === 'sec') {
+      await sleep(t, 120);
+      await typeText(t, tnode(art.appendChild(el('div', 'st-sec'))), b.t, 120, follow);
+    } else if (b.k === 'quote') {
+      await typeRich(t, art.appendChild(el('p', 'st-quote')), b.t, CPS, follow);
+    } else if (b.k === 'p') {
+      await typeRich(t, art.appendChild(el('p')), b.t, CPS, follow);
+    } else if (b.k === 'ac') {
+      const box = art.appendChild(el('div', 'ac'));
+      await typeText(t, tnode(box.appendChild(el('b'))), b.n, 140, follow);
+      for (const [kw, v] of b.g) {
+        const g = box.appendChild(el('span', 'g'));
+        g.appendChild(el('span', 'kw', kw));
+        await typeRich(t, g.appendChild(el('span', 'gt')), v, CPS, follow);
+      }
+    } else if (b.k === 'li') {
+      if (!ul) ul = art.appendChild(el('ul'));
+      await typeRich(t, ul.appendChild(el('li')), b.t, CPS, follow);
+    } else if (b.k === 'table') {
+      const tb = el('table', 'tbl');
+      tb.innerHTML = '<thead><tr>' + b.head.map(h => '<th>' + esc(h) + '</th>').join('') + '</tr></thead><tbody></tbody>';
+      art.appendChild(tb); follow();
+      for (const r of b.rows) {
+        const tr = $('tbody', tb).appendChild(el('tr'));
+        for (const c of r) await typeText(t, tnode(tr.appendChild(el('td'))), c, CPS, follow);
+      }
+    } else if (b.k === 'ux') {
+      await sleep(t, 160);
+      const h = art.appendChild(el('div', 'st-sec ux-h', '<span class="d"></span><span>UX Copy Requests — for <span class="ar" dir="rtl">فريق UX</span></span>'));
+      void h;
+      const tb = el('table', 'tbl uxt');
+      tb.innerHTML = '<thead><tr><th>#</th><th>Where it appears</th><th>What it must convey</th><th>Suggested text (<span class="ar" dir="rtl">نص أولي</span>)</th></tr></thead><tbody></tbody>';
+      art.appendChild(tb); follow();
+      for (const r of b.rows) {
+        const tr = el('tr', 'rv pend');
+        tr.innerHTML = '<td>' + r[0] + '</td><td>' + esc(r[1]) + '</td><td>' + esc(r[2]) + '</td><td><span class="s-ar" lang="ar">' + esc(r[3]) + '</span><span class="s-en">' + esc(r[4]) + '</span></td>';
+        $('tbody', tb).appendChild(tr); follow();
+        await sleep(t, 40); tr.classList.remove('pend'); follow();
+        await sleep(t, 380);
+      }
+    }
+    storyShown++;
+    if (storyView === 'raw') renderRaw();
+    await sleep(t, 60);
+  }
+}
+async function playStory(t) {
+  const S = $('#s-nusuk-user-story');
+  const { thread, follow } = chatParts(S);
+  await composerSend(t, S, 'سوّ لي ستوري لتنبيه المعتمر قبل ما ينتهي وقت تصريح العمرة');
+  const body = aiMsg(thread);
+  const chips = body.appendChild(el('div', 'skills'));
+  const c1 = skillChip(chips, 'يقرأ', 'nusuk-user-story'); follow();
+  await sleep(t, 600); chipDone(c1, 'قرأ');
+  const c2 = skillChip(chips, 'يقرأ', 'template-examples.md'); follow();
+  await sleep(t, 550); chipDone(c2, 'قرأ');
+  const p1 = body.appendChild(el('p'));
+  await typeText(t, tnode(p1), 'قبل ما أكتب، سؤالين سريعين:', 70, follow);
+  const qs = [
+    ['هل فيه فلو قائم نعيد استخدامه؟', ['نعم، فيه فلو قائم', 'لا، قدرة جديدة'], 1],
+    ['كم قبل نهاية الوقت يوصل التنبيه؟', ['24 ساعة', 'ساعتين', 'حدّدها أنت'], 2]
+  ];
+  for (const [q, opts, pick] of qs) {
+    const card = body.appendChild(el('div', 'qcard'));
+    card.appendChild(el('div', 'q')).textContent = q;
+    const o = card.appendChild(el('div', 'opts'));
+    const spans = opts.map(x => { const s = el('span'); s.textContent = x; o.appendChild(s); return s; });
+    follow();
+    await sleep(t, 900);
+    spans[pick].classList.add('picked');
+    await sleep(t, 450);
+  }
+  const p2 = body.appendChild(el('p'));
+  await typeRich(t, p2, 'تمام — قدرة جديدة، فأكتبها بالقالب الكامل وبالإنجليزي. التوقيتات اللي ما حدّدتها معلّمة [[a]]، والرسائل الظاهرة للمستخدم مرقّمة لفريق UX.', 75, follow);
+  await sleep(t, 250);
+  await streamStory(t);
+  const sum = body.appendChild(el('div', 'sum'));
+  ['٤ سيناريوهات Gherkin', '٥ قواعد قابلة للاختبار', '٤ حالات حدّية', '٣ نصوص أولية لفريق UX'].forEach(s => { sum.appendChild(el('span')).textContent = s; });
+  follow();
+}
+
+/* =====================================================================
+   NAVIGATION + PARENT API
+   ===================================================================== */
+const PLAY = { 'overview': playOverview, 'arabic-docx-rtl': playDocx, 'nusuk-user-story': playStory };
+function resetScreen(id) {
+  if (id === 'arabic-docx-rtl' || id === 'nusuk-user-story') {
+    const S = $('#s-' + id);
+    $('.thread', S).innerHTML = '';
+    $('.ctext', S).textContent = '';
+    $('.composer', S).classList.remove('typing');
+  }
+  if (id === 'arabic-docx-rtl') {
+    userToggled = false; legendReady = false;
+    $('#page').innerHTML = '<span class="cursor"></span>';
+    applyMode('fixed');
+    $('#docBody').scrollTop = 0;
+  }
+  if (id === 'nusuk-user-story') resetStoryPanel();
+}
+let cur = null, cycleTimer = null;
+const DWELL = { 'overview': 4200, 'arabic-docx-rtl': 5600, 'nusuk-user-story': 5000 };
+function post(msg) { try { if (window.parent && window.parent !== window) window.parent.postMessage(msg, '*'); } catch (e) { /* ignore */ } }
+function activate(id) {
+  cur = id;
+  token++;
+  const t = token;
+  $$('.screen').forEach(s => s.classList.toggle('active', s.id === 's-' + id));
+  $$('.nav [data-go]').forEach(b => b.setAttribute('aria-current', b.dataset.go === id ? 'true' : 'false'));
+  $('#crumb').textContent = SCREENS.find(s => s.id === id).label;
+  resetScreen(id);
+  (async () => {
+    try { await PLAY[id](t); }
+    catch (e) { if (e !== CANCEL) console.warn(e); }
+  })();
+}
+function schedule() {
+  clearTimeout(cycleTimer);
+  if (!THUMB) return;
+  cycleTimer = setTimeout(() => {
+    const i = SCREENS.findIndex(s => s.id === cur);
+    go(SCREENS[(i + 1) % SCREENS.length].id);
+  }, DWELL[cur] || 4200);
+}
+function go(id, opt = {}) {
+  if (!SCREENS.some(s => s.id === id)) return;
+  if (id === cur && !opt.replay) { schedule(); return; }
+  const first = cur === null;
+  const fromId = cur;
+  if (!first && !opt.replay && document.startViewTransition && !REDUCED) {
+    const tr = document.startViewTransition(() => activate(id));
+    ['ready', 'finished', 'updateCallbackDone'].forEach(k => tr[k] && tr[k].catch(() => {}));
+  } else {
+    activate(id);
+    if (!first && !REDUCED) {
+      const s = $('#s-' + id);
+      s.classList.remove('enter'); void s.offsetWidth; s.classList.add('enter');
+    }
+  }
+  if (id !== fromId || first) post({ type: 'pw:screen-changed', slug: SLUG, id });
+  schedule();
+}
+document.addEventListener('click', e => {
+  const g = e.target.closest('[data-go]');
+  if (g) { go(g.dataset.go); return; }
+  if (e.target.closest('[data-replay]')) go(cur, { replay: true });
+});
+window.addEventListener('message', e => {
+  const d = e.data;
+  if (!d || typeof d !== 'object') return;
+  if (d.type === 'pw:screen' && typeof d.id === 'string') go(d.id);
+});
+
+const initial = SCREENS.some(s => s.id === params.get('screen')) ? params.get('screen') : 'overview';
+post({ type: 'pw:ready', slug: SLUG, screens: SCREENS.map(s => ({ id: s.id, label: s.label })) });
+go(initial);
+})();
+</script>
+</body>
+</html>

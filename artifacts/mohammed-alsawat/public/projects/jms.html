@@ -1,0 +1,892 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام إدارة المراكز | Journal Management System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --background:hsl(40 20% 98%);--foreground:hsl(220 25% 10%);
+  --card:#fff;--primary:hsl(215 70% 35%);--primary-rgb:27 79 152;
+  --secondary:hsl(40 30% 93%);--muted:hsl(40 15% 94%);--muted-fg:hsl(220 10% 46%);
+  --accent:hsl(175 45% 40%);--destructive:hsl(0 72% 50%);
+  --border:hsl(220 15% 88%);--radius:.625rem;
+  --sb:hsl(215 70% 12%);--sb-fg:hsl(215 20% 90%);--sb-accent:hsl(215 60% 20%);--sb-border:hsl(215 50% 18%);
+  --sbw:16rem;--sbw-icon:3rem;
+  --ease:cubic-bezier(.22,.8,.25,1);
+}
+*{box-sizing:border-box;border-color:var(--border)}
+html,body{margin:0;height:100%}
+body{background:var(--background);color:var(--foreground);font-family:'IBM Plex Sans Arabic','IBM Plex Sans',system-ui,sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+textarea,input{font:inherit;color:inherit}
+svg.i{width:16px;height:16px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+svg.i5{width:20px;height:20px}svg.i7{width:28px;height:28px}svg.i3{width:12px;height:12px}
+.app{display:flex;height:100vh;width:100%}
+/* ---------- Sidebar ---------- */
+.sb{width:var(--sbw);flex-shrink:0;background:var(--sb);color:var(--sb-fg);display:flex;flex-direction:column;transition:width .25s var(--ease),transform .3s var(--ease);overflow:hidden;z-index:30;border-inline-start:1px solid var(--sb-border)}
+.sb-content{flex:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:none}
+.sb-brand{padding:12px 16px}
+.sb-brand h2{margin:0;font-size:18px;font-weight:700;color:hsl(215 70% 62%);white-space:nowrap}
+.sb-group{padding:4px 8px;position:relative}
+.sb-label{height:28px;display:flex;align-items:center;padding:0 8px;font-size:12px;font-weight:500;color:hsl(215 20% 90% / .7);white-space:nowrap}
+.sb-menu{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.sb-item{display:flex;align-items:center;gap:8px;height:32px;width:100%;padding:0 8px;border-radius:6px;font-size:14px;text-align:start;white-space:nowrap;transition:background .15s,color .15s}
+.sb-item:hover{background:hsl(40 15% 94% / .5)}
+.sb-item.active{background:var(--muted);color:var(--primary);font-weight:500}
+.sb-foot{padding:8px;border-top:1px solid var(--sb-border)}
+.sb-user{padding:8px;font-size:13px;color:hsl(215 20% 90% / .65);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-logout{display:flex;align-items:center;gap:8px;width:100%;height:36px;padding:0 12px;border-radius:6px;font-size:14px}
+.sb-logout:hover{background:var(--sb-accent)}
+.collapsed .sb{width:var(--sbw-icon)}
+.collapsed .sb .txt,.collapsed .sb-brand,.collapsed .sb-user,.collapsed .sb-label span{display:none}
+.collapsed .sb-item,.collapsed .sb-logout{justify-content:center;padding:0}
+.sb-backdrop{display:none}
+/* ---------- Main ---------- */
+.main-col{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.hdr{height:56px;display:flex;align-items:center;border-bottom:1px solid var(--border);padding:0 16px;flex-shrink:0;background:var(--background)}
+.hdr .sp{flex:1}
+.ghost{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 12px;border-radius:6px;font-size:14px;font-weight:500;transition:background .15s}
+.ghost:hover{background:var(--secondary)}
+.ghost.icon{width:36px;padding:0;position:relative}
+.ghost.sm{height:32px;padding:0 10px}
+.bell-badge{position:absolute;top:-4px;inset-inline-end:-4px;height:20px;min-width:20px;border-radius:999px;background:var(--destructive);color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;padding:0 4px;transition:transform .3s var(--ease)}
+.bell-badge.pop{animation:pop .5s var(--ease)}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
+main{flex:1;overflow-y:auto;overflow-x:hidden;padding:24px;scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:hsl(220 15% 80%) transparent}
+.tbl-wrap,.kanban{scrollbar-width:thin;scrollbar-color:hsl(220 15% 80%) transparent}
+#view{view-transition-name:page;max-width:1280px;margin:0 auto}
+/* ---------- Primitives ---------- */
+h1{font-size:30px;font-weight:700;margin:0;line-height:1.2;letter-spacing:-.01em}
+.muted{color:var(--muted-fg)}.xs{font-size:12px}.sm{font-size:14px}
+.stack>*+*{margin-top:24px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 1px 2px rgb(0 0 0 / .05)}
+.card-h{padding:24px 24px 0}.card-t{font-size:16px;font-weight:600;margin:0;display:flex;align-items:center;gap:8px}
+.card-c{padding:24px}.card-h+.card-c{padding-top:16px}
+.badge{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;white-space:nowrap;border:1px solid transparent;transition:background .3s,color .3s}
+.b-secondary{background:var(--secondary)}.b-outline{border-color:var(--border);color:var(--foreground)}
+.s-draft{background:var(--muted);color:var(--muted-fg)}
+.s-submitted{background:#dbeafe;color:#1e40af}.s-under_review{background:#fef9c3;color:#854d0e}
+.s-revision_required{background:#ffedd5;color:#9a3412}.s-revised{background:#f3e8ff;color:#6b21a8}
+.s-accepted{background:#dcfce7;color:#166534}.s-rejected{background:#fee2e2;color:#991b1b}
+.s-published{background:#d1fae5;color:#065f46}.s-withdrawn{background:#f3f4f6;color:#1f2937}
+.b-destructive{background:var(--destructive);color:#fff}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:6px;font-size:14px;font-weight:500;transition:background .15s,transform .1s,box-shadow .15s;white-space:nowrap}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:hsl(215 70% 31%)}
+.btn-outline{border:1px solid var(--border);background:var(--background)}.btn-outline:hover{background:var(--secondary)}
+.btn-sm{height:36px;padding:0 12px}.btn-w{width:100%}.btn-start{justify-content:flex-start}
+.btn[disabled]{opacity:.5;pointer-events:none}
+.input{height:40px;border:1px solid var(--border);border-radius:6px;background:var(--background);padding:0 12px;font-size:14px;width:100%;max-width:320px;outline:none;transition:box-shadow .15s}
+.input:focus,.trigger:focus-visible,textarea:focus{box-shadow:0 0 0 2px var(--background),0 0 0 4px var(--primary);outline:none}
+textarea.ta{width:100%;border:1px solid var(--border);border-radius:6px;background:var(--background);padding:8px 12px;font-size:14px;resize:none;outline:none}
+.row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.between{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+/* select */
+.sel{position:relative;width:192px}
+.trigger{display:flex;align-items:center;justify-content:space-between;width:100%;height:40px;border:1px solid var(--border);border-radius:6px;background:var(--background);padding:0 12px;font-size:14px;text-align:start}
+.trigger svg{opacity:.5}
+.menu{position:absolute;top:calc(100% + 4px);inset-inline:0;background:#fff;border:1px solid var(--border);border-radius:6px;box-shadow:0 8px 24px rgb(15 23 42 / .12);padding:4px;z-index:60;max-height:260px;overflow:auto;animation:menuIn .16s var(--ease)}
+@keyframes menuIn{from{opacity:0;transform:translateY(-4px) scale(.98)}to{opacity:1;transform:none}}
+.opt{display:flex;align-items:center;gap:8px;width:100%;padding:6px 8px;padding-inline-start:28px;border-radius:4px;font-size:14px;text-align:start;position:relative}
+.opt:hover,.opt.kb{background:var(--secondary)}
+.opt .ck{position:absolute;inset-inline-start:8px}
+/* stat cards */
+.grid{display:grid;gap:12px}
+.g2-4{grid-template-columns:repeat(4,1fr)}.g6{grid-template-columns:repeat(6,1fr)}
+.stat{cursor:pointer;text-align:center;padding:12px 8px 8px;transition:box-shadow .2s,border-color .2s,transform .2s}
+.stat:hover{box-shadow:0 1px 3px rgb(0 0 0 / .1)}
+.stat.on{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary)}
+.stat .n{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+/* table */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{height:48px;padding:0 16px;text-align:start;font-weight:500;color:var(--muted-fg);border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:14px 16px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr{transition:background .15s}
+tbody tr:hover{background:hsl(40 15% 94% / .5)}
+tbody tr:last-child td{border-bottom:0}
+tr.clk{cursor:pointer}
+.fw{font-weight:500}.nw{white-space:nowrap}
+.ttl{display:inline-block}
+.row-in{animation:rowIn .35s var(--ease) both}
+@keyframes rowIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+/* tabs */
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);max-width:512px;background:var(--muted);border-radius:6px;padding:4px;height:40px;position:relative}
+.tab{display:flex;align-items:center;justify-content:center;gap:6px;border-radius:4px;font-size:14px;font-weight:500;color:var(--muted-fg);position:relative;z-index:1;transition:color .2s}
+.tab.on{color:var(--foreground)}
+.tab-ind{position:absolute;top:4px;bottom:4px;border-radius:4px;background:var(--background);box-shadow:0 1px 2px rgb(0 0 0 / .08);transition:inset-inline-start .3s var(--ease);width:calc((100% - 8px)/4)}
+.tabpane{margin-top:16px;animation:fadeUp .35s var(--ease)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.g-2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+svg.chart{width:100%;height:280px;display:block;overflow:visible;direction:ltr}
+svg.chart text{font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif;font-size:12px;fill:#666}
+.grow-x{transform-box:fill-box;transform-origin:left center;animation:growX .9s var(--ease) both}
+.grow-y{transform-box:fill-box;transform-origin:center bottom;animation:growY .9s var(--ease) both}
+@keyframes growX{from{transform:scaleX(0)}}@keyframes growY{from{transform:scaleY(0)}}
+.draw{animation:draw 1.3s var(--ease) both}
+@keyframes draw{from{stroke-dashoffset:var(--len)}to{stroke-dashoffset:0}}
+.pie-sweep{animation:sweep 1.1s var(--ease) both}
+@keyframes sweep{from{stroke-dashoffset:629}to{stroke-dashoffset:0}}
+.fade-late{animation:fadeIn .5s .8s both}
+@keyframes fadeIn{from{opacity:0}}
+.legend{display:flex;justify-content:center;gap:16px;font-size:12px;margin-top:4px}
+.legend i{display:inline-block;width:10px;height:10px;margin-inline-end:4px;vertical-align:middle}
+/* kanban */
+.kanban{display:flex;gap:12px;overflow-x:auto;padding-bottom:16px;min-height:400px}
+.kcol{min-width:240px;max-width:280px;flex-shrink:0}
+.kcard{padding:12px;display:block;width:100%;text-align:start;cursor:pointer;transition:box-shadow .2s,transform .2s}
+.kcard:hover{box-shadow:0 4px 12px rgb(0 0 0 / .08);transform:translateY(-1px)}
+.kcard+.kcard{margin-top:8px}
+.clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.late{color:#ea580c;display:inline-flex;align-items:center;gap:2px;font-size:12px}
+.empty-dash{text-align:center;font-size:12px;color:var(--muted-fg);padding:32px 0;border:1px dashed var(--border);border-radius:var(--radius)}
+/* paper detail */
+.pd-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.pd-head h1{font-size:24px;flex:1;min-width:200px}
+.pd-grid{display:grid;grid-template-columns:1fr 2fr;gap:24px;align-items:start}
+.sep{height:1px;background:var(--border);margin:12px 0}
+.kv{display:flex;justify-content:space-between;gap:8px}
+.stepper{display:flex;align-items:flex-start;gap:8px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none}
+.step{display:flex;align-items:flex-start;flex:1;min-width:110px}
+.step-col{display:flex;flex-direction:column;align-items:center;flex:1}
+.dot{height:36px;width:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;border:2px solid var(--muted);color:var(--muted-fg);background:var(--background);transition:all .45s var(--ease)}
+.dot.done{background:var(--primary);border-color:var(--primary);color:#fff}
+.dot.cur{background:rgb(var(--primary-rgb) / .1);border-color:var(--primary);color:var(--primary);box-shadow:0 0 0 4px rgb(var(--primary-rgb) / .15)}
+.dot.cur.pulse{animation:ring 1.6s ease-out 1}
+@keyframes ring{0%{box-shadow:0 0 0 0 rgb(var(--primary-rgb) / .45)}70%{box-shadow:0 0 0 14px rgb(var(--primary-rgb) / 0)}100%{box-shadow:0 0 0 4px rgb(var(--primary-rgb) / .15)}}
+.step-lbl{font-size:12px;margin-top:8px;text-align:center;line-height:1.25;color:var(--muted-fg);transition:color .3s}
+.step-lbl.cur{color:var(--foreground);font-weight:600}
+.bar{flex:1;height:2px;margin:17px 4px 0;min-width:20px;background:var(--muted);position:relative;overflow:hidden}
+.bar::after{content:"";position:absolute;inset:0;background:var(--primary);transform:scaleX(0);transform-origin:right;transition:transform .6s var(--ease)}
+.bar.done::after{transform:scaleX(1)}
+.where{border-color:rgb(var(--primary-rgb) / .3);background:rgb(var(--primary-rgb) / .05)}
+.wrow{display:flex;align-items:flex-start;gap:12px;padding:8px 0}
+.wrow p{margin:0}
+.ok{color:#16a34a}.amber{color:#d97706}
+.next{margin-top:12px;display:flex;gap:8px;align-items:flex-start;border:1px solid rgb(var(--primary-rgb) / .4);background:var(--background);border-radius:6px;padding:12px}
+.acc{border:1px solid var(--border);border-radius:var(--radius);background:var(--card);padding:0 16px}
+.acc+.acc{margin-top:8px}
+.acc-t{display:flex;align-items:center;justify-content:space-between;width:100%;padding:16px 0;font-size:16px;font-weight:600;text-align:start}
+.acc-t:hover .lbl{text-decoration:underline}
+.acc-t .chev{transition:transform .25s}
+.acc.open .acc-t .chev{transform:rotate(180deg)}
+.acc-b{display:grid;grid-template-rows:0fr;transition:grid-template-rows .3s var(--ease)}
+.acc.open .acc-b{grid-template-rows:1fr}
+.acc-b>div{overflow:hidden}
+.acc-b>div>div{padding-bottom:16px}
+.report{border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.report+.report{margin-top:16px}
+.scores{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.score{display:flex;justify-content:space-between;background:var(--muted);border-radius:4px;padding:8px;font-size:14px}
+.note{background:var(--muted);border-radius:4px;padding:8px;font-size:14px;margin-top:4px}
+.conf{border-inline-start:2px solid var(--destructive)}
+.tl{display:flex;gap:16px}
+.tl-dot{border-radius:999px;padding:6px;background:var(--muted);color:var(--muted-fg);display:flex}
+.tl-dot.last{background:var(--primary);color:#fff}
+.tl-line{width:1px;flex:1;background:var(--border);margin-top:4px}
+.tl.new{animation:fadeUp .5s var(--ease)}
+.tally{display:flex;flex-wrap:wrap;align-items:center;gap:16px;font-size:14px}
+.tally>span{display:flex;align-items:center;gap:4px}
+/* inbox */
+.ib-item{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--border);border-radius:var(--radius);padding:12px;width:100%;text-align:start;transition:background .15s}
+.ib-item:hover{background:hsl(40 15% 94% / .5)}
+.ib-item+.ib-item{margin-top:8px}
+.ib-item p{margin:0}
+.ms-auto{margin-inline-start:auto}
+/* messages */
+.thread-h{display:flex;align-items:center;justify-content:space-between;padding:24px;cursor:pointer;width:100%;text-align:start}
+.thread-h:hover{background:hsl(40 15% 94% / .35)}
+.thread-b{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s var(--ease)}
+.thread.open .thread-b{grid-template-rows:1fr}
+.thread-b>div{overflow:hidden}
+.thread-b>div>div{padding:0 24px 24px}
+.msg{border-radius:var(--radius);padding:12px}
+.msg+.msg{margin-top:12px}
+.msg.me{background:rgb(var(--primary-rgb) / .1);margin-inline-start:32px}
+.msg.them{background:var(--muted);margin-inline-end:32px}
+.msg p{margin:0}
+.msg.new{animation:fadeUp .4s var(--ease)}
+.thread+.thread{margin-top:12px}
+.unread-dot{width:8px;height:8px;border-radius:99px;background:var(--primary);display:inline-block}
+/* dialog */
+.overlay{position:fixed;inset:0;background:rgb(0 0 0 / .8);z-index:80;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .2s both}
+.dialog{background:var(--background);border:1px solid var(--border);border-radius:8px;box-shadow:0 20px 50px rgb(0 0 0 / .25);width:100%;max-width:512px;padding:24px;position:relative;animation:dlgIn .25s var(--ease) both}
+@keyframes dlgIn{from{opacity:0;transform:scale(.95)}}
+.overlay.out{animation:fadeOut .18s both}.overlay.out .dialog{animation:dlgOut .18s both}
+@keyframes fadeOut{to{opacity:0}}@keyframes dlgOut{to{opacity:0;transform:scale(.96)}}
+.dialog h3{margin:0 0 16px;font-size:18px;font-weight:600}
+.dialog .x{position:absolute;top:16px;inset-inline-end:16px;opacity:.7}
+.field+.field{margin-top:16px}
+.field label{display:block;font-size:14px;font-weight:500;margin-bottom:8px}
+.field .sel{width:100%}
+/* toast */
+#toaster{position:fixed;bottom:24px;left:24px;z-index:90;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 12px rgb(0 0 0 / .1);padding:14px 16px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;min-width:240px;animation:toastIn .35s var(--ease) both}
+.toast.out{animation:toastOut .3s both}
+@keyframes toastIn{from{opacity:0;transform:translateY(16px)}}@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+/* view transitions */
+::view-transition-old(page){animation:vtOut .22s ease both}
+::view-transition-new(page){animation:vtIn .38s var(--ease) both}
+@keyframes vtOut{to{opacity:0;transform:translateY(-6px)}}
+@keyframes vtIn{from{opacity:0;transform:translateY(10px)}}
+::view-transition-group(paper-title){animation-duration:.5s;animation-timing-function:var(--ease)}
+::view-transition-old(paper-title),::view-transition-new(paper-title){height:100%;object-fit:none;object-position:right center}
+.fb-out{animation:vtOut .18s ease both}.fb-in{animation:vtIn .34s var(--ease) both}
+/* responsive */
+@media (max-width:1279px){.g6{grid-template-columns:repeat(4,1fr)}}
+@media (max-width:1023px){.pd-grid{grid-template-columns:1fr}.g-2{grid-template-columns:1fr}}
+@media (max-width:767px){
+  .g6,.g2-4{grid-template-columns:repeat(2,1fr)}
+  .sb{position:fixed;top:0;bottom:0;right:0;width:18rem !important;transform:translateX(100%)}
+  .m-open .sb{box-shadow:0 0 40px rgb(0 0 0 / .3)}
+  td:first-child{min-width:220px}
+  .collapsed .sb .txt,.collapsed .sb-brand,.collapsed .sb-user{display:revert}
+  .collapsed .sb-item{justify-content:flex-start;padding:0 8px}
+  .m-open .sb{transform:none}
+  .m-open .sb-backdrop{display:block;position:fixed;inset:0;background:rgb(0 0 0 / .8);z-index:25;animation:fadeIn .2s}
+  main{padding:16px}
+  h1{font-size:24px}
+  .tab .tl-txt{display:none}
+  .lang-txt{display:none}
+  .input{max-width:none}
+  .sel{width:100%}
+  .msg.me{margin-inline-start:16px}.msg.them{margin-inline-end:16px}
+  .thread-h{padding:16px}.thread-b>div>div{padding:0 16px 16px}
+  .scores{grid-template-columns:1fr}
+  #toaster{right:12px;left:12px}
+  .card-h{padding:16px 16px 0}.card-c{padding:16px}
+}
+/* thumb mode */
+.thumb main{scroll-behavior:auto}
+.thumb *{cursor:default !important}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms !important;animation-delay:0s !important;transition-duration:.001ms !important}
+  ::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none !important}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="sb" id="sb" aria-label="القائمة الجانبية"></aside>
+  <div class="sb-backdrop" id="backdrop"></div>
+  <div class="main-col">
+    <header class="hdr">
+      <button class="ghost icon" id="sbTrigger" aria-label="Toggle Sidebar"><svg class="i" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg></button>
+      <div class="sp"></div>
+      <div class="row" style="gap:8px">
+        <button class="ghost sm" id="langBtn"><svg class="i" viewBox="0 0 24 24"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg><span class="lang-txt">English</span></button>
+        <button class="ghost icon" id="bellBtn" aria-label="الإشعارات"><svg class="i" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="bell-badge" id="bellBadge">3</span></button>
+      </div>
+    </header>
+    <main id="main"><div id="view"></div></main>
+  </div>
+</div>
+<div id="toaster"></div>
+<div id="dlgRoot"></div>
+<script>
+(function(){
+'use strict';
+/* ================= Icons (lucide) ================= */
+var IC={
+inbox:'<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+dash:'<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
+file:'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+send:'<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+user:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/>',
+clip:'<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>',
+gauge:'<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
+book:'<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+bookc:'<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/><path d="m16 12 2 2 4-4"/>',
+users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+msg:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+dollar:'<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+ban:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m4.243 5.21 14.39 12.472"/>',
+logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>',
+eye:'<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+dl:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+alert:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+bars:'<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
+kanban:'<path d="M6 5v11"/><path d="M12 5v6"/><path d="M18 5v14"/>',
+check:'<path d="M20 6 9 17l-5-5"/>',
+cc:'<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+ac:'<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>',
+ar:'<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+uplus:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>',
+vote:'<path d="m9 12 2 2 4-4"/><path d="M5 7c0-1.1.9-2 2-2h10a2 2 0 0 1 2 2v12H5V7Z"/><path d="M22 19H2"/>',
+star:'<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+cd:'<path d="m6 9 6 6 6-6"/>',cu:'<path d="m18 15-6-6-6 6"/>',
+xc:'<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
+mc:'<circle cx="12" cy="12" r="10"/><path d="M8 12h8"/>',
+x:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+cl:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'
+};
+function ic(n,c){return '<svg class="i '+(c||'')+'" viewBox="0 0 24 24" aria-hidden="true">'+IC[n]+'</svg>';}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+/* ================= Data (fictional) ================= */
+var ST={draft:'مسودة',submitted:'مقدم',under_review:'قيد المراجعة',revision_required:'يحتاج مراجعة',revised:'مُعدل',accepted:'مقبول',rejected:'مرفوض',published:'منشور',withdrawn:'مسحوب'};
+var FLOW=['submitted','under_review','revision_required','revised','accepted','rejected','published','withdrawn'];
+var KAN=['submitted','under_review','revision_required','revised','accepted','rejected','published'];
+var CENTERS=['مركز الدراسات التاريخية','مركز البحوث الجغرافية','مركز التراث والآثار','مركز الوثائق والمخطوطات'];
+var STAGES=['الفحص الأولي','التحكيم العلمي','تصويت اللجنة','القرار النهائي','النشر'];
+var AUTH=['د. سارة العتيبي','د. فهد الشمري','د. نورة القحطاني','أ. عبدالله الحربي','د. ريم الدوسري','د. ماجد الغامدي','د. هند السبيعي','أ. تركي العنزي','د. لمى الزهراني','د. سلطان المطيري'];
+var ME='د. أحمد المالكي';
+// [title_ar, title_en, author, center, status, stage, date, daysSinceUpdate, keywords]
+var RAW=[
+['طرق الحج القديمة في شبه الجزيرة العربية: دراسة ميدانية','Ancient Hajj Routes in the Arabian Peninsula: A Field Study',0,1,'under_review',1,'2026-08-24',3,['طرق الحج','الجغرافيا التاريخية','المسح الميداني']],
+['التحولات العمرانية في الدرعية خلال القرن الثاني عشر الهجري','Urban Transformations in Diriyah in the 12th Century AH',1,0,'submitted',0,'2026-09-28',2],
+['النقوش الثمودية في منطقة حائل: قراءة جديدة','Thamudic Inscriptions in Hail: A New Reading',2,2,'under_review',2,'2026-07-11',19],
+['الوثائق العثمانية المتعلقة بالأحساء (١٨٧١–١٩١٣م)','Ottoman Documents on Al-Ahsa (1871–1913)',3,3,'revision_required',1,'2026-06-30',23],
+['التغير المناخي وأثره على الواحات الزراعية في نجد','Climate Change and the Agricultural Oases of Najd',4,1,'accepted',3,'2026-05-18',6],
+['الأسواق الموسمية في الحجاز قبل الإسلام','Seasonal Markets of the Hijaz before Islam',5,0,'published',4,'2026-03-02',40],
+['المخطوطات العلمية في مكتبات المدينة المنورة','Scientific Manuscripts in the Libraries of Madinah',6,3,'under_review',1,'2026-08-03',16],
+['الرحالة الغربيون ووصفهم لمنطقة عسير','Western Travellers and their Accounts of Asir',7,0,'submitted',0,'2026-09-30',1],
+['أنماط الاستيطان في وادي حنيفة: مقاربة جغرافية','Settlement Patterns in Wadi Hanifa: A Geographic Approach',8,1,'revised',2,'2026-07-22',4],
+['التعليم في الكتاتيب بمنطقة القصيم','Kuttab Education in the Qassim Region',9,3,'rejected',3,'2026-04-14',30],
+['الحرف التقليدية في جازان: توثيق وتحليل','Traditional Crafts of Jazan: Documentation and Analysis',0,2,'under_review',1,'2026-08-15',9],
+['الموانئ التاريخية على ساحل البحر الأحمر','Historic Ports of the Red Sea Coast',1,1,'accepted',3,'2026-04-27',12],
+['الخرائط العربية المبكرة لشبه الجزيرة','Early Arabic Maps of the Peninsula',2,1,'submitted',0,'2026-09-21',17],
+['دور القوافل التجارية في ربط اليمامة بالخليج','Caravan Trade Linking Al-Yamamah to the Gulf',3,0,'revision_required',1,'2026-06-09',26],
+['العمارة الطينية في نجران: خصائص وأساليب','Mud Architecture in Najran: Features and Techniques',4,2,'published',4,'2026-02-11',55],
+['الأوقاف في مكة المكرمة من خلال سجلات المحكمة','Endowments of Makkah through Court Records',5,3,'under_review',2,'2026-07-29',15],
+['المراسلات الرسمية في مطلع القرن الرابع عشر الهجري','Official Correspondence in the Early 14th Century AH',6,3,'submitted',0,'2026-10-02',0],
+['التوزيع المكاني للآبار التاريخية في منطقة الرياض','Spatial Distribution of Historic Wells in Riyadh',7,1,'revised',2,'2026-07-05',5],
+['الشعر النبطي مصدراً للتاريخ الاجتماعي','Nabati Poetry as a Source for Social History',8,3,'accepted',3,'2026-05-06',8],
+['المسكوكات الإسلامية المكتشفة في الربذة','Islamic Coins Discovered at Al-Rabadha',9,2,'under_review',1,'2026-08-27',11],
+['التحليل الجيومورفولوجي لحرة خيبر','Geomorphological Analysis of Harrat Khaybar',0,1,'rejected',3,'2026-03-19',44],
+['تاريخ الصحافة المحلية في المنطقة الشرقية','A History of Local Press in the Eastern Province',1,0,'submitted',0,'2026-09-12',22],
+['أسماء الأماكن في المعاجم الجغرافية العربية','Place Names in Arabic Geographical Lexicons',2,3,'revision_required',1,'2026-06-21',8],
+['السدود القديمة في الطائف: دراسة أثرية','Ancient Dams of Taif: An Archaeological Study',3,2,'published',4,'2026-01-25',70]
+];
+var PAPERS=RAW.map(function(r,i){return {id:'p'+(i+1),t:r[0],te:r[1],a:AUTH[r[2]],c:r[3],s:r[4],stage:r[5],d:r[6],late:r[7],kw:r[8]||['التاريخ المحلي','الجزيرة العربية']};});
+function P(id){for(var i=0;i<PAPERS.length;i++)if(PAPERS[i].id===id)return PAPERS[i];return PAPERS[0];}
+var HIST={};
+function history(p){
+  if(!HIST[p.id]){
+    var h=[{a:'تقديم البحث',st:0,by:p.a,d:p.d+'T09:20',n:null}];
+    for(var k=1;k<=p.stage;k++){h.push({a:k===1?'Status changed to under_review':k===2?'إرسال إلى لجنة':k===3?'قرار اللجنة':'Status changed to published',st:k,by:ME,d:shift(p.d,k*9)+'T11:05',n:k===1?'تمت إحالة البحث إلى محكمَين خارجيين.':null});}
+    HIST[p.id]=h;
+  }
+  return HIST[p.id];
+}
+function shift(d,n){var x=new Date(d+'T12:00:00');x.setDate(x.getDate()+n);return x.toISOString().slice(0,10);}
+var hijri;try{hijri=new Intl.DateTimeFormat('ar-SA');}catch(e){hijri=null;}
+function fmtDate(d){var x=new Date(d+'T12:00:00');return hijri?hijri.format(x):d;}
+function fmtDT(d){var x=new Date(d);try{return x.toLocaleString('ar-SA',{dateStyle:'short',timeStyle:'short'});}catch(e){return d;}}
+
+var THREADS=[
+ {id:'t1',subject:'مراسلة بخصوص: طرق الحج القديمة في شبه الجزيرة العربية',type:'editor_author',d:'2026-10-07',unread:true,msgs:[
+   {me:true,who:ME,d:'2026-10-04',b:'السلام عليكم د. سارة، وصلنا تقرير المحكم الأول ويطلب توضيح منهجية تحديد مسارات الطرق على الخرائط. نأمل إرفاق ملحق بالإحداثيات.'},
+   {me:false,who:'د. سارة العتيبي',d:'2026-10-06',b:'وعليكم السلام، شكراً على المتابعة. سأجهّز ملحقاً بالإحداثيات وصور المواقع خلال أسبوع بإذن الله.'},
+   {me:false,who:'د. سارة العتيبي',d:'2026-10-07',b:'هل يُفضَّل إرفاق الملحق بصيغة PDF أم ضمن ملف البحث نفسه؟'}]},
+ {id:'t2',subject:'مراسلة بخصوص: الوثائق العثمانية المتعلقة بالأحساء',type:'editor_author',d:'2026-10-03',msgs:[
+   {me:true,who:ME,d:'2026-10-01',b:'نرفق لكم ملاحظات المحكمين، والمطلوب تعديلات جوهرية في الفصل الثالث وتوحيد طريقة التوثيق.'},
+   {me:false,who:'أ. عبدالله الحربي',d:'2026-10-03',b:'تم الاطلاع على الملاحظات، وسأعيد رفع النسخة المعدلة قبل نهاية الشهر.'}]},
+ {id:'t3',subject:'مراسلة بخصوص: النقوش الثمودية في منطقة حائل',type:'editor_reviewer',d:'2026-09-29',msgs:[
+   {me:false,who:'د. لمى الزهراني',d:'2026-09-28',b:'أحتاج تمديد موعد تسليم التقرير أسبوعاً إضافياً لمراجعة صور النقوش بدقة أعلى.'},
+   {me:true,who:ME,d:'2026-09-29',b:'لا مانع، تم تعديل تاريخ الاستحقاق في النظام. شكراً لكِ.'}]},
+ {id:'t4',subject:'مراسلة بخصوص: الأوقاف في مكة المكرمة من خلال سجلات المحكمة',type:'editor_author',d:'2026-09-20',msgs:[
+   {me:true,who:ME,d:'2026-09-20',b:'أُحيل بحثكم إلى لجنة التحكيم العلمي للتصويت، وسنوافيكم بالقرار فور اكتماله.'}]}
+];
+
+/* ================= State ================= */
+var Q=new URLSearchParams(location.search);
+var THUMB=Q.get('mode')==='thumb';
+var RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+var SCREENS=[{id:'ops',label:'لوحة التشغيل'},{id:'papers',label:'الأبحاث'},{id:'paper',label:'تفاصيل البحث'},{id:'inbox',label:'صندوق المهام'},{id:'messages',label:'الرسائل'}];
+var S={screen:null,paperId:'p1',opsTab:'analytics',opsFilter:'all',papersFilter:'all',search:'',openThread:null,openAcc:{reports:true},morph:null,bell:3};
+var view=document.getElementById('view'),mainEl=document.getElementById('main'),app=document.getElementById('app');
+
+/* ================= Sidebar ================= */
+var NAV=[
+ {g:'لوحة التحكم',items:[['inbox','صندوق المهام','inbox'],['dashboard','لوحة التحكم','dash'],['my-papers','أبحاثي','file'],['submit','تقديم بحث','send'],['notifications','الإشعارات','bell'],['profile','الملف الشخصي','user'],['reviewer','لوحة المحكم','clip']]},
+ {g:'الأبحاث',items:[['ops','لوحة التشغيل','gauge'],['papers','الأبحاث','file'],['journals','المراكز','book'],['committees','اللجان','users'],['messages','الرسائل','msg']]},
+ {g:'الإعدادات',items:[['users','المستخدمون','users'],['financial','المالية','dollar'],['blacklist','القائمة السوداء','ban']]}
+];
+function renderSidebar(){
+  var h='<div class="sb-content"><div class="sb-brand"><h2>نظام إدارة المراكز</h2></div>';
+  NAV.forEach(function(g){
+    h+='<div class="sb-group"><div class="sb-label"><span>'+g.g+'</span></div><ul class="sb-menu">';
+    g.items.forEach(function(it){
+      var act=(S.screen===it[0])||(S.screen==='paper'&&it[0]==='papers');
+      h+='<li><button class="sb-item'+(act?' active':'')+'" data-nav="'+it[0]+'" title="'+it[1]+'">'+ic(it[2])+'<span class="txt">'+it[1]+'</span></button></li>';
+    });
+    h+='</ul></div>';
+  });
+  h+='</div><div class="sb-foot"><div class="sb-user">'+ME+'</div><button class="sb-logout" data-nav="logout">'+ic('logout')+'<span class="txt">تسجيل الخروج</span></button></div>';
+  document.getElementById('sb').innerHTML=h;
+}
+
+/* ================= Helpers ================= */
+function badge(s){return '<span class="badge s-'+s+'">'+ST[s]+'</span>';}
+function count(s,list){return (list||PAPERS).filter(function(p){return p.s===s;}).length;}
+function sel(name,val,opts,cls){
+  var cur=opts.filter(function(o){return o[0]===val;})[0];
+  return '<div class="sel '+(cls||'')+'" data-sel="'+name+'"><button class="trigger" type="button" aria-haspopup="listbox"><span>'+(cur?cur[1]:(ST[val]||''))+'</span>'+ic('cd')+'</button></div>';
+}
+var SEL={};
+function openSel(wrap){
+  closeSel();
+  var name=wrap.getAttribute('data-sel'),cfg=SEL[name];if(!cfg)return;
+  var m=document.createElement('div');m.className='menu';m.setAttribute('role','listbox');
+  m.innerHTML=cfg.opts().map(function(o){var on=o[0]===cfg.val();return '<button class="opt" data-v="'+o[0]+'">'+(on?'<span class="ck">'+ic('check')+'</span>':'')+o[1]+'</button>';}).join('');
+  wrap.appendChild(m);
+}
+function closeSel(){var m=document.querySelector('.sel .menu');if(m)m.remove();}
+function toast(t){
+  var el=document.createElement('div');el.className='toast';el.innerHTML='<span class="ok">'+ic('cc')+'</span>'+esc(t);
+  var tr=document.getElementById('toaster');tr.appendChild(el);
+  setTimeout(function(){el.classList.add('out');setTimeout(function(){el.remove();},320);},2600);
+}
+function animateCounters(root){
+  root.querySelectorAll('[data-count]').forEach(function(el){
+    var to=+el.getAttribute('data-count'),suffix=el.getAttribute('data-suffix')||'';
+    if(RM){el.textContent=to+suffix;return;}
+    var t0=performance.now(),dur=900+Math.min(to,40)*12;
+    (function step(t){var k=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-k,3);el.textContent=Math.round(to*e)+suffix;if(k<1)requestAnimationFrame(step);})(t0);
+  });
+}
+
+/* ================= Charts ================= */
+var PIE_COLORS=['hsl(210, 70%, 50%)','hsl(45, 80%, 50%)','hsl(25, 80%, 55%)','hsl(280, 60%, 55%)','hsl(140, 60%, 45%)','hsl(0, 65%, 50%)','hsl(160, 60%, 45%)','hsl(0, 0%, 55%)'];
+function pieChart(){
+  var data=[];var order=[];PAPERS.forEach(function(p){if(order.indexOf(p.s)<0)order.push(p.s);});
+  order.forEach(function(s){data.push({s:s,v:count(s)});});
+  var tot=PAPERS.length,cx=230,cy=140,r=100,a0=-Math.PI/2,paths='',labels='';
+  data.forEach(function(d,i){
+    var a1=a0+d.v/tot*2*Math.PI,large=(a1-a0)>Math.PI?1:0;
+    var x0=cx+r*Math.cos(a0),y0=cy+r*Math.sin(a0),x1=cx+r*Math.cos(a1),y1=cy+r*Math.sin(a1);
+    paths+='<path d="M'+cx+','+cy+' L'+x0.toFixed(2)+','+y0.toFixed(2)+' A'+r+','+r+' 0 '+large+' 1 '+x1.toFixed(2)+','+y1.toFixed(2)+' Z" fill="'+PIE_COLORS[i]+'" stroke="#fff" stroke-width="1"/>';
+    var am=(a0+a1)/2,lx=cx+(r+8)*Math.cos(am),ly=cy+(r+8)*Math.sin(am),tx=cx+(r+24)*Math.cos(am),ty=cy+(r+24)*Math.sin(am),anchor=Math.cos(am)>=0?'start':'end';
+    labels+='<path d="M'+lx.toFixed(1)+','+ly.toFixed(1)+' L'+tx.toFixed(1)+','+ty.toFixed(1)+'" stroke="'+PIE_COLORS[i]+'" fill="none"/><text x="'+(tx+(anchor==='start'?3:-3)).toFixed(1)+'" y="'+(ty+4).toFixed(1)+'" text-anchor="'+anchor+'" style="fill:'+PIE_COLORS[i]+'">'+ST[d.s]+': '+d.v+'</text>';
+    a0=a1;
+  });
+  return '<svg class="chart" viewBox="0 0 460 280" preserveAspectRatio="xMidYMid meet"><defs><mask id="pm"><circle cx="'+cx+'" cy="'+cy+'" r="50" fill="none" stroke="#fff" stroke-width="102" stroke-dasharray="629" class="pie-sweep" transform="rotate(-90 '+cx+' '+cy+')"/></mask></defs><g mask="url(#pm)">'+paths+'</g><g class="fade-late">'+labels+'</g></svg>';
+}
+function axisGrid(x0,x1,y0,y1,ny,max,unit){
+  var g='';for(var i=0;i<=ny;i++){var y=y1-(y1-y0)*i/ny;g+='<line x1="'+x0+'" x2="'+x1+'" y1="'+y+'" y2="'+y+'" stroke="#ccc" stroke-dasharray="3 3"/><text x="'+(x0-8)+'" y="'+(y+4)+'" text-anchor="end">'+Math.round(max*i/ny)+(unit||'')+'</text>';}
+  return g;
+}
+function lineChart(){
+  var months=['2025-11','2025-12','2026-01','2026-02','2026-03','2026-04','2026-05','2026-06','2026-07','2026-08','2026-09','2026-10'];
+  var vals=[1,2,1,2,3,2,3,4,5,4,6,3];
+  var x0=44,x1=450,y0=14,y1=246,max=8,pts=vals.map(function(v,i){return [x0+(x1-x0)*i/(vals.length-1),y1-(y1-y0)*v/max];});
+  var d='M'+pts.map(function(p){return p[0].toFixed(1)+','+p[1].toFixed(1);}).join(' L');
+  var len=0;for(var i=1;i<pts.length;i++)len+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);
+  var g='<svg class="chart" viewBox="0 0 460 280">'+axisGrid(x0,x1,y0,y1,4,max);
+  months.forEach(function(m,i){if(i%2===0)g+='<text x="'+pts[i][0].toFixed(1)+'" y="'+(y1+20)+'" text-anchor="middle">'+m+'</text>';});
+  g+='<line x1="'+x0+'" x2="'+x1+'" y1="'+y1+'" y2="'+y1+'" stroke="#666"/><line x1="'+x0+'" x2="'+x0+'" y1="'+y0+'" y2="'+y1+'" stroke="#666"/>';
+  g+='<path d="'+d+'" fill="none" stroke="hsl(210, 70%, 50%)" stroke-width="2" stroke-dasharray="'+len.toFixed(0)+'" style="--len:'+len.toFixed(0)+'" class="draw"/>';
+  pts.forEach(function(p,i){g+='<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="4" fill="#fff" stroke="hsl(210, 70%, 50%)" stroke-width="2" class="fade-late" style="animation-delay:'+(.15+i*.08)+'s"/>';});
+  return g+'</svg>';
+}
+function centerBars(){
+  var x0=130,x1=450,y0=10,y1=246,max=8,n=CENTERS.length,bh=(y1-y0)/n,g='<svg class="chart" viewBox="0 0 460 280">';
+  for(var i=0;i<=4;i++){var x=x0+(x1-x0)*i/4;g+='<line x1="'+x+'" x2="'+x+'" y1="'+y0+'" y2="'+y1+'" stroke="#ccc" stroke-dasharray="3 3"/><text x="'+x+'" y="'+(y1+20)+'" text-anchor="middle">'+(max*i/4)+'</text>';}
+  CENTERS.forEach(function(c,i){
+    var v=PAPERS.filter(function(p){return p.c===i;}).length,y=y0+bh*i+bh*.15,w=(x1-x0)*v/max;
+    g+='<text x="'+(x0-8)+'" y="'+(y+bh*.35+4)+'" text-anchor="end">'+c.replace('مركز ','مركز ')+'</text>';
+    g+='<path d="M'+x0+','+y.toFixed(1)+' h'+(w-4).toFixed(1)+' a4,4 0 0 1 4,4 v'+(bh*.7-8).toFixed(1)+' a4,4 0 0 1 -4,4 h-'+(w-4).toFixed(1)+' Z" fill="hsl(210, 70%, 50%)" class="grow-x" style="animation-delay:'+(i*.1)+'s"/>';
+  });
+  g+='<line x1="'+x0+'" x2="'+x0+'" y1="'+y0+'" y2="'+y1+'" stroke="#666"/><line x1="'+x0+'" x2="'+x1+'" y1="'+y1+'" y2="'+y1+'" stroke="#666"/>';
+  return g+'</svg>';
+}
+function rateBars(){
+  var x0=44,x1=450,y0=10,y1=230,g='<svg class="chart" viewBox="0 0 460 280" style="height:256px">'+axisGrid(x0,x1,y0,y1,4,100,'%');
+  var n=CENTERS.length,cw=(x1-x0)/n;
+  CENTERS.forEach(function(c,i){
+    var ps=PAPERS.filter(function(p){return p.c===i;}),acc=ps.filter(function(p){return p.s==='accepted'||p.s==='published';}).length,rej=count('rejected',ps);
+    var ra=Math.round(acc/ps.length*100),rr=Math.round(rej/ps.length*100),bw=cw*.28,cxm=x0+cw*i+cw/2;
+    [[ra,'hsl(140, 60%, 45%)',cxm-bw-2],[rr,'hsl(0, 65%, 50%)',cxm+2]].forEach(function(b,k){
+      var h=(y1-y0)*b[0]/100;if(h<1)return;
+      g+='<path d="M'+b[2].toFixed(1)+','+y1+' v-'+(h-4).toFixed(1)+' a4,4 0 0 1 4,-4 h'+(bw-8).toFixed(1)+' a4,4 0 0 1 4,4 v'+(h-4).toFixed(1)+' Z" fill="'+b[1]+'" class="grow-y" style="animation-delay:'+(i*.1+k*.05)+'s"/>';
+    });
+    g+='<text x="'+cxm.toFixed(1)+'" y="'+(y1+18)+'" text-anchor="middle" style="font-size:11px">'+c.replace('مركز ','')+'</text>';
+  });
+  g+='<line x1="'+x0+'" x2="'+x1+'" y1="'+y1+'" y2="'+y1+'" stroke="#666"/><line x1="'+x0+'" x2="'+x0+'" y1="'+y0+'" y2="'+y1+'" stroke="#666"/>';
+  return g+'</svg><div class="legend"><span><i style="background:hsl(140, 60%, 45%)"></i><span style="color:hsl(140, 60%, 45%)">نسبة القبول %</span></span><span><i style="background:hsl(0, 65%, 50%)"></i><span style="color:hsl(0, 65%, 50%)">نسبة الرفض %</span></span></div>';
+}
+
+/* ================= Screens ================= */
+function scrOps(){
+  var h='<div class="stack"><div class="between"><div><h1>لوحة التشغيل</h1><p class="muted sm" style="margin:4px 0 0"><span data-count="'+PAPERS.length+'">0</span> بحث في النظام</p></div><button class="btn btn-outline" data-act="csv">'+ic('dl')+'تصدير CSV</button></div>';
+  h+='<div class="grid g6">';
+  KAN.slice(0,6).forEach(function(s){h+='<div class="card stat'+(S.opsFilter===s?' on':'')+'" data-opsstat="'+s+'"><div class="n" data-count="'+count(s)+'">0</div><div class="xs muted">'+ST[s]+'</div></div>';});
+  h+='</div><div>';
+  var tabs=[['analytics','تحليلات','bars'],['kanban','كانبان','kanban'],['delayed','متأخرة','alert'],['reviewers','المحكمون','users']];
+  var ti=tabs.map(function(t){return t[0];}).indexOf(S.opsTab);
+  h+='<div class="tabs" role="tablist"><div class="tab-ind" style="inset-inline-start:calc(4px + '+ti+' * (100% - 8px)/4)"></div>';
+  tabs.forEach(function(t){h+='<button class="tab'+(t[0]===S.opsTab?' on':'')+'" data-tab="'+t[0]+'" role="tab">'+ic(t[2])+'<span class="tl-txt">'+t[1]+'</span></button>';});
+  h+='</div><div id="tabpane">'+opsPane()+'</div></div></div>';
+  return h;
+}
+function opsPane(){
+  var t=S.opsTab,h='<div class="tabpane">';
+  if(t==='analytics'){
+    h+='<div class="g-2">'+
+    '<div class="card"><div class="card-h"><h3 class="card-t">توزيع الأبحاث حسب الحالة</h3></div><div class="card-c">'+pieChart()+'</div></div>'+
+    '<div class="card"><div class="card-h"><h3 class="card-t">الأبحاث المقدمة شهرياً</h3></div><div class="card-c">'+lineChart()+'</div></div>'+
+    '<div class="card"><div class="card-h"><h3 class="card-t">الأبحاث حسب المركز</h3></div><div class="card-c">'+centerBars()+'</div></div>'+
+    '<div class="card"><div class="card-h"><h3 class="card-t">نسب القبول والرفض</h3></div><div class="card-c">'+rateBars()+'</div></div></div>';
+  }else if(t==='kanban'){
+    var list=PAPERS.filter(function(p){return S.opsFilter==='all'||p.s===S.opsFilter;});
+    h+='<div class="row" style="margin-bottom:16px"><input class="input" placeholder="بحث" style="max-width:320px">'+sel('opsCenter','all',[['all','كل المراكز']].concat(CENTERS.map(function(c,i){return ['c'+i,c];})))+'</div><div class="kanban">';
+    KAN.forEach(function(s){
+      var ps=list.filter(function(p){return p.s===s;});
+      h+='<div class="kcol"><div class="between" style="padding-bottom:8px">'+badge(s)+'<span class="xs muted fw">'+ps.length+'</span></div>';
+      if(!ps.length)h+='<div class="empty-dash">لا توجد أبحاث</div>';
+      ps.forEach(function(p,i){h+='<button class="card kcard row-in" style="animation-delay:'+(i*.05)+'s" data-paper="'+p.id+'"><p class="sm fw clamp2" style="margin:0 0 6px"><span class="ttl" data-tid="'+p.id+'">'+p.t+'</span></p><p class="xs muted" style="margin:0 0 6px">'+p.a+'</p><div class="between"><span class="xs muted">'+CENTERS[p.c]+'</span>'+(p.late>7?'<span class="late">'+ic('clock','i3')+p.late+'ي</span>':'')+'</div></button>';});
+      h+='</div>';
+    });
+    h+='</div>';
+  }else if(t==='delayed'){
+    var dl=PAPERS.filter(function(p){return ['submitted','under_review','revision_required'].indexOf(p.s)>=0&&p.late>=14;}).sort(function(a,b){return b.late-a.late;});
+    h+='<div class="row" style="margin-bottom:16px"><span class="sm muted">أبحاث لم يتم تحديثها منذ</span>'+sel('delay','14',[['7','7 أيام'],['14','14 يوم'],['30','30 يوم'],['60','60 يوم']],'')+'<span class="badge b-destructive">'+ic('alert','i3')+dl.length+' بحث متأخر</span></div>';
+    h+='<div class="card"><div class="card-c"><div class="tbl-wrap"><table><thead><tr><th>العنوان</th><th>الباحث</th><th>الحالة</th><th>أيام التأخر</th><th style="width:64px">إجراءات</th></tr></thead><tbody>';
+    dl.forEach(function(p,i){h+='<tr class="clk row-in" style="animation-delay:'+(i*.04)+'s" data-paper="'+p.id+'"><td class="fw"><span class="ttl" data-tid="'+p.id+'">'+p.t+'</span></td><td class="nw">'+p.a+'</td><td>'+badge(p.s)+'</td><td><span class="fw" style="color:var(--destructive)">'+p.late+' يوم</span></td><td><button class="ghost sm">'+ic('eye')+'</button></td></tr>';});
+    h+='</tbody></table></div></div></div>';
+  }else{
+    var rv=[['د. لمى الزهراني',6],['د. سلطان المطيري',5],['د. هند السبيعي',4],['د. ماجد الغامدي',3],['د. ريم الدوسري',2]];
+    h+='<div class="card"><div class="card-h"><h3 class="card-t">أداء المحكمين</h3></div><div class="card-c"><svg class="chart" viewBox="0 0 460 210" style="height:210px">';
+    rv.forEach(function(r,i){var y=10+i*38,w=290*r[1]/6;h+='<text x="146" y="'+(y+18)+'" text-anchor="end">'+r[0]+'</text><path d="M154,'+y+' h'+(w-4)+' a4,4 0 0 1 4,4 v20 a4,4 0 0 1 -4,4 h-'+(w-4)+' Z" fill="hsl(280, 60%, 55%)" class="grow-x" style="animation-delay:'+(i*.08)+'s"/>';});
+    h+='<line x1="154" x2="154" y1="4" y2="200" stroke="#666"/></svg><div class="tbl-wrap" style="margin-top:16px"><table><thead><tr><th>المحكم</th><th>البريد الإلكتروني</th><th>عدد الأبحاث</th></tr></thead><tbody>';
+    rv.forEach(function(r,i){h+='<tr><td class="fw">'+r[0]+'</td><td dir="ltr" style="text-align:right">reviewer'+(i+1)+'@example.org</td><td><span class="badge b-secondary">'+r[1]+'</span></td></tr>';});
+    h+='</tbody></table></div></div></div>';
+  }
+  return h+'</div>';
+}
+function scrPapers(){
+  var st=['submitted','under_review','revision_required','revised','accepted','rejected','published'];
+  var h='<div class="stack"><h1>الأبحاث</h1><div class="row"><input class="input" id="pSearch" placeholder="بحث" value="'+esc(S.search)+'">'+sel('pStatus',S.papersFilter,[['all','الكل']].concat(st.map(function(s){return [s,ST[s]];})))+'</div>';
+  h+='<div class="grid g2-4">';
+  ['submitted','under_review','accepted','published'].forEach(function(s){h+='<div class="card stat'+(S.papersFilter===s?' on':'')+'" style="padding:16px 8px 12px" data-pstat="'+s+'"><div class="n" data-count="'+count(s)+'">0</div><div class="xs muted">'+ST[s]+'</div></div>';});
+  h+='</div><div class="card"><div class="card-c" id="ptable">'+papersTable()+'</div></div></div>';
+  return h;
+}
+function papersTable(){
+  var q=S.search.trim().toLowerCase();
+  var list=PAPERS.filter(function(p){if(S.papersFilter!=='all'&&p.s!==S.papersFilter)return false;if(q)return p.t.toLowerCase().indexOf(q)>=0||p.te.toLowerCase().indexOf(q)>=0;return true;});
+  if(!list.length)return '<p class="muted" style="margin:0">لا توجد بيانات</p>';
+  var h='<div class="tbl-wrap"><table><thead><tr><th>العنوان (عربي)</th><th>الباحث</th><th>المراكز</th><th>الحالة</th><th>المرحلة</th><th>التاريخ</th><th style="width:64px">إجراءات</th></tr></thead><tbody>';
+  list.forEach(function(p,i){
+    var morph=S.morph===p.id?' style="view-transition-name:paper-title"':'';
+    h+='<tr class="clk row-in" style="animation-delay:'+Math.min(i*.03,.4)+'s" data-paper="'+p.id+'"><td class="fw"><span class="ttl" data-tid="'+p.id+'"'+morph+'>'+p.t+'</span></td><td class="nw">'+p.a+'</td><td class="nw">'+CENTERS[p.c]+'</td><td>'+badge(p.s)+'</td><td class="nw">'+STAGES[p.stage]+'</td><td class="nw sm muted">'+fmtDate(p.d)+'</td><td><button class="ghost sm" aria-label="عرض">'+ic('eye')+'</button></td></tr>';
+  });
+  return h+'</tbody></table></div>';
+}
+function statusRows(p){
+  var g=p.stage,rows=[],next=null;
+  if(g<1)rows.push(['التحكيم','todo','لم تتم دعوة محكمين بعد']);
+  else if(g===1)rows.push(['التحكيم','pending','استُلم 1 من 2 تقرير']);
+  else rows.push(['التحكيم','done','اكتملت كل التقارير (2/2)']);
+  if(g<2)rows.push(['اللجنة','todo','لم يُرسل البحث إلى لجنة بعد']);
+  else if(g===2)rows.push(['اللجنة','pending','صوّت 2 من 3 عضو']);
+  else rows.push(['اللجنة','done','اكتمل التصويت (3/3 موافقة)']);
+  if(g<3){rows.push(['قرار للباحث','todo','لم يُرسل قرار للباحث بعد']);rows.push(['رد الباحث','todo','—']);}
+  else{rows.push(['قرار للباحث','done','أُرسل القرار (accept) في '+fmtDate(shift(p.d,27))]);rows.push(['رد الباحث',g>=4?'done':'pending',g>=4?'ردّ الباحث / أعاد التقديم':'بانتظار رد الباحث']);}
+  if(g===0)next='ابدأ بدعوة محكمين أو إرسال البحث للجنة';
+  else if(g===1)next='أرسل البحث إلى لجنة للتصويت';
+  else if(g===2)next='بانتظار اكتمال تصويت اللجنة';
+  else if(g===3)next='أرسل قرار اللجنة إلى الباحث';
+  if(p.s==='revision_required')next='بانتظار تعديلات الباحث';
+  return {rows:rows,next:next};
+}
+function stepper(p,pulse){
+  var h='<div class="card"><div class="card-c" style="padding-bottom:20px"><div class="between" style="margin-bottom:16px"><h2 class="sm muted" style="margin:0;font-weight:600">مسار البحث</h2><span id="stBadge">'+badge(p.s)+'</span></div><div class="stepper">';
+  STAGES.forEach(function(s,i){
+    var cur=i===p.stage,done=i<p.stage;
+    h+='<div class="step"><div class="step-col"><div class="dot'+(done?' done':'')+(cur?' cur'+(pulse?' pulse':''):'')+'">'+(done?ic('check'):(i+1))+'</div><p class="step-lbl'+(cur?' cur':'')+'">'+s+'</p></div>'+(i<STAGES.length-1?'<div class="bar'+(done?' done':'')+'"></div>':'')+'</div>';
+  });
+  return h+'</div></div></div>';
+}
+function whereCard(p){
+  var w=statusRows(p),icon={done:'<span class="ok">'+ic('cc','i5')+'</span>',pending:'<span class="amber">'+ic('cl','i5')+'</span>',todo:'<span class="muted">'+ic('ac','i5')+'</span>'};
+  var h='<div class="card where"><div class="card-h" style="padding-bottom:0"><h3 class="card-t">أين نحن الآن؟</h3></div><div class="card-c" style="padding-top:8px">';
+  w.rows.forEach(function(r){h+='<div class="wrow">'+icon[r[1]]+'<div style="flex:1;min-width:0"><p class="sm fw">'+r[0]+'</p><p class="sm muted">'+r[2]+'</p></div></div>';});
+  if(w.next)h+='<div class="next"><span style="color:var(--primary);margin-top:2px">'+ic('ar')+'</span><div><p class="xs" style="margin:0 0 2px;font-weight:600;color:var(--primary)">الإجراء التالي المقترح</p><p class="sm" style="margin:0">'+w.next+'</p></div></div>';
+  return h+'</div></div>';
+}
+function acc(key,title,body){
+  var open=S.openAcc[key]?' open':'';
+  return '<div class="acc'+open+'" data-acc="'+key+'"><button class="acc-t"><span class="lbl row" style="gap:8px">'+title+'</span>'+ic('cd','chev')+'</button><div class="acc-b"><div><div>'+body+'</div></div></div></div>';
+}
+function scrPaper(){
+  var p=P(S.paperId),morph=' style="view-transition-name:paper-title"';
+  var h='<div class="stack" style="--g:16px"><div class="pd-head"><button class="ghost icon" data-nav="papers" aria-label="رجوع">'+ic('ar')+'</button><h1><span class="ttl"'+morph+'>'+p.t+'</span></h1><span id="hdBadge">'+badge(p.s)+'</span></div>';
+  h+='<div id="stepWrap">'+stepper(p)+'</div><div class="pd-grid"><aside class="stack" style="margin:0">';
+  h+='<div class="card"><div class="card-h" style="padding-bottom:0"><h3 class="card-t">معلومات البحث</h3></div><div class="card-c sm">'+
+     '<p class="xs muted" style="margin:0 0 4px">العنوان (عربي)</p><p class="fw" style="margin:0">'+p.t+'</p><div class="sep"></div>'+
+     '<p class="xs muted" style="margin:0 0 4px">العنوان (إنجليزي)</p><p class="fw" dir="ltr" style="margin:0;text-align:left">'+p.te+'</p><div class="sep"></div>'+
+     '<div class="kv"><span class="muted">المراكز</span><span>'+CENTERS[p.c]+'</span></div><div class="sep"></div>'+
+     '<p class="muted" style="margin:0 0 4px">المرحلة الحالية</p><p class="fw" style="margin:0" id="curStage">'+STAGES[p.stage]+'</p><div class="sep"></div>'+
+     '<div class="kv"><span class="muted">تاريخ التقديم</span><span>'+fmtDate(p.d)+'</span></div><div class="sep"></div>'+
+     '<p class="muted" style="margin:0 0 4px">الكلمات المفتاحية</p><div class="row" style="gap:4px">'+p.kw.map(function(k){return '<span class="badge b-secondary">'+k+'</span>';}).join('')+'</div><div class="sep"></div>'+
+     '<p class="muted" style="margin:0 0 8px">ملف البحث</p><button class="btn btn-outline btn-sm btn-w" data-act="file">'+ic('file')+'تحميل الملف</button></div></div>';
+  h+='<div class="card"><div class="card-h" style="padding-bottom:0"><h3 class="card-t">إجراءات سريعة</h3></div><div class="card-c" style="display:grid;gap:8px">'+
+     '<button class="btn btn-outline btn-sm btn-w btn-start" data-act="status" id="chgBtn">'+ic('send')+'تغيير الحالة</button>'+
+     '<button class="btn btn-outline btn-sm btn-w btn-start" data-act="assign">'+ic('uplus')+'تعيين منسق للبحث</button>'+
+     '<button class="btn btn-outline btn-sm btn-w btn-start" data-act="msgauthor">'+ic('msg')+'مراسلة الباحث</button>'+
+     '<button class="btn btn-outline btn-sm btn-w btn-start" data-act="committee">'+ic('vote')+'إرسال إلى لجنة</button></div></div></aside>';
+  h+='<div class="stack" style="margin:0" id="pdMain">'+pdMain(p)+'</div></div></div>';
+  return h;
+}
+function pdMain(p){
+  var h='<div id="whereWrap">'+whereCard(p)+'</div><div>';
+  h+=acc('abs','ملخصات البحث','<div class="g-2" style="gap:16px;padding-top:8px"><div><p class="xs muted" style="margin:0 0 4px">العنوان (عربي)</p><p class="sm" style="margin:0">تتناول الدراسة '+p.t.split(':')[0]+' من خلال مسح ميداني للمواقع وتحليل المصادر التاريخية والخرائط، وتقترح تصنيفاً مكانياً جديداً للمسارات والمحطات.</p></div><div dir="ltr"><p class="xs muted" style="margin:0 0 4px">العنوان (إنجليزي)</p><p class="sm" style="margin:0">This study examines '+p.te.split(':')[0]+' through field surveys, historical sources and cartographic analysis, proposing a new spatial classification of routes and stations.</p></div></div>');
+  var reqs=[['د. لمى الزهراني','completed','مكتمل','s-accepted'],['د. سلطان المطيري',p.stage>1?'completed':'accepted',p.stage>1?'مكتمل':'مقبول',p.stage>1?'s-accepted':'s-submitted']];
+  h+=acc('req','طلبات التحكيم','<div class="between" style="margin-bottom:12px"><span class="sm fw">طلبات التحكيم</span><button class="btn btn-outline btn-sm" data-act="reqreview">'+ic('send')+'إرسال طلب تحكيم</button></div>'+reqs.map(function(r,i){return '<div class="ib-item"><div><p class="sm fw">'+r[0]+'</p><p class="xs muted">تاريخ الاستحقاق: '+fmtDate(shift(p.d,21+i*4))+'</p></div><span class="badge '+r[3]+'">'+r[2]+'</span></div>';}).join(''));
+  var nrep=p.stage>1?2:(p.stage===1?1:0);
+  if(nrep){
+    var recs=[['minor_revision','تعديلات طفيفة','s-under_review',[8,7,9,8]],['accept','قبول','s-accepted',[9,8,8,9]]],crit=['أصالة البحث','المنهجية العلمية','التوثيق والمصادر','سلامة اللغة'];
+    var body='<div style="padding-top:8px">';
+    for(var i=0;i<nrep;i++){var r=recs[i];body+='<div class="report"><div class="between" style="margin-bottom:12px"><div class="row" style="gap:8px"><span style="color:var(--primary)">'+ic('star')+'</span><span class="fw">محكّم '+(i+1)+'</span><span class="sm muted">('+reqs[i][0]+')</span></div><span class="badge '+r[2]+'">'+r[1]+'</span></div><p class="sm fw muted" style="margin:0 0 8px">الدرجات:</p><div class="scores">'+crit.map(function(c,k){return '<div class="score"><span>'+c+'</span><span style="font-weight:700">'+r[3][k]+'/10</span></div>';}).join('')+'</div><p class="sm fw muted" style="margin:12px 0 0">ملاحظات عامة:</p><div class="note">'+(i?'بحث متماسك ومصادره موثقة جيداً، ويضيف قيمة واضحة للدراسات الجغرافية التاريخية.':'منهجية جيدة، مع الحاجة لتوضيح آلية تحديد المسارات وإرفاق الإحداثيات.')+'</div>'+(i===0?'<p class="sm fw muted row" style="margin:12px 0 0;gap:4px">'+ic('eye','i3')+'ملاحظات سرية (للمحرر فقط):</p><div class="note conf">أوصي بإعطاء الباحث مهلة كافية لاستكمال الملحق.</div>':'')+'</div>';}
+    h+=acc('reports','<span style="display:flex;gap:8px;align-items:center">'+ic('clip')+'تقارير التحكيم المقدمة<span class="badge b-secondary">'+nrep+'</span></span>',body+'</div>');
+  }
+  var vt=p.stage<2?'<p class="muted sm" style="text-align:center;margin:8px 0">لم يُرسل البحث إلى لجنة بعد</p>':
+    '<div class="card"><div class="card-h"><h3 class="card-t"><span style="color:var(--primary)">'+ic('vote','i5')+'</span>لجنة التحكيم العلمي'+(p.stage>2?'<span class="badge s-accepted ms-auto">مقبول</span>':'')+'</h3></div><div class="card-c"><div class="tally"><span><span class="ok">'+ic('cc')+'</span><b>'+(p.stage>2?2:1)+'</b><span class="muted">مقبول</span></span><span><span class="amber">'+ic('bookc')+'</span><b>1</b><span class="muted">مقبول مع تعديلات</span></span><span><span style="color:#dc2626">'+ic('xc')+'</span><b>0</b><span class="muted">مرفوض</span></span><span><span class="muted">'+ic('mc')+'</span><b>0</b><span class="muted">امتناع</span></span><span class="muted">'+ic('users')+(p.stage>2?3:2)+'/3 صوّتوا</span>'+(p.stage>2?'':'<span class="badge b-secondary">قيد الانتظار</span>')+'</div></div></div>';
+  h+=acc('committee','<span style="display:flex;gap:8px;align-items:center">'+ic('vote')+'تصويت اللجنة</span>','<div style="padding-top:8px">'+vt+'</div>');
+  h+=acc('decision','<span style="display:flex;gap:8px;align-items:center">'+ic('send')+'قرار إلى الباحث</span>','<p class="muted sm" style="margin:8px 0">'+(p.stage>=3?'أُرسل قرار القبول إلى الباحث.':'لم يُرسل قرار للباحث بعد')+'</p>');
+  var hist=history(p),tb='<div>';
+  hist.forEach(function(e,i){var last=i===hist.length-1;tb+='<div class="tl'+(e.fresh?' new':'')+'"><div style="display:flex;flex-direction:column;align-items:center"><div class="tl-dot'+(last?' last':'')+'">'+ic(last?'cc':'clock')+'</div>'+(last?'':'<div class="tl-line"></div>')+'</div><div style="padding-bottom:16px;flex:1"><p class="fw" style="margin:0">'+e.a+'</p><p class="sm muted" style="margin:0">'+STAGES[e.st]+'</p>'+(e.n?'<p class="note">'+e.n+'</p>':'')+'<div class="row xs muted" style="gap:8px;margin-top:4px"><span>بواسطة: '+e.by+'</span><span>'+fmtDT(e.d)+'</span></div></div></div>';});
+  h+=acc('history','<span style="display:flex;gap:8px;align-items:center">'+ic('clock')+'سجل المراحل والتتبع</span>',tb+'</div>');
+  return h+'</div>';
+}
+function scrInbox(){
+  var sec=function(icon,color,title,items){
+    var h='<div class="card"><div class="card-h"><h3 class="card-t"><span style="color:'+color+'">'+ic(icon,'i5')+'</span>'+title+'<span class="badge b-secondary ms-auto">'+items.length+'</span></h3></div><div class="card-c">';
+    items.forEach(function(it,i){h+='<button class="ib-item row-in" style="animation-delay:'+(i*.05)+'s" '+(it.paper?'data-paper="'+it.paper+'"':'')+'><div><p class="sm fw"><span class="ttl" data-tid="'+(it.paper||'')+'">'+it.t+'</span></p><p class="xs muted">'+it.sub+'</p>'+(it.date?'<p class="xs muted">'+it.date+'</p>':'')+'</div>'+(it.b?'<span class="badge '+it.bc+'" style="flex-shrink:0">'+it.b+'</span>':'')+'</button>';});
+    return h+'</div></div>';
+  };
+  var h='<div class="stack"><div class="row" style="gap:12px"><span style="color:var(--primary)">'+ic('inbox','i7')+'</span><h1>صندوق المهام</h1></div><div class="stack">';
+  h+=sec('clock','#eab308','طلبات تحكيم بانتظار ردك',[{t:P('p13').t,sub:CENTERS[P('p13').c],b:'معلق',bc:'s-under_review',paper:'p13'},{t:P('p22').t,sub:CENTERS[P('p22').c],b:'معلق',bc:'s-under_review',paper:'p22'}]);
+  h+=sec('clip','var(--primary)','أبحاث تحت تحكيمك',[{t:P('p11').t,sub:CENTERS[P('p11').c],b:'جارٍ',bc:'s-submitted',paper:'p11'},{t:P('p20').t,sub:CENTERS[P('p20').c],b:'جارٍ',bc:'s-submitted',paper:'p20'}]);
+  h+=sec('file','#f97316','أبحاثي التي تحتاج تعديلاً',[{t:P('p4').t,sub:CENTERS[P('p4').c],b:'يحتاج مراجعة',bc:'s-revision_required',paper:'p4'}]);
+  h+=sec('vote','#a855f7','أبحاث بانتظار تصويتك في اللجنة',[{t:P('p3').t,sub:'لجنة التحكيم العلمي · '+CENTERS[P('p3').c],b:'بانتظار تصويتك',bc:'s-revised',paper:'p3'},{t:P('p16').t,sub:'لجنة التحكيم العلمي · '+CENTERS[P('p16').c],b:'بانتظار تصويتك',bc:'s-revised',paper:'p16'}]);
+  h+=sec('bell','var(--primary)','إشعارات غير مقروءة',[{t:'تقرير تحكيم جديد',sub:'قدّم المحكّم تقريره حول بحث: طرق الحج القديمة في شبه الجزيرة العربية',date:fmtDate('2026-10-08'),paper:'p1'},{t:'رسالة جديدة',sub:'ردّت د. سارة العتيبي على مراسلتك',date:fmtDate('2026-10-07')},{t:'بحث جديد مقدم',sub:'تم تقديم بحث: المراسلات الرسمية في مطلع القرن الرابع عشر الهجري',date:fmtDate('2026-10-02'),paper:'p17'}]).replace(/<\/div><\/div>$/,'<div style="padding-top:8px;text-align:end"><a href="#" class="sm" style="color:var(--primary);text-decoration:none" data-nav="notifications">عرض الكل</a></div></div></div>');
+  return h+'</div></div>';
+}
+function scrMessages(){
+  var h='<div class="stack" style="max-width:768px;margin:0 auto"><h1>الرسائل</h1><div>';
+  THREADS.forEach(function(t){
+    var open=S.openThread===t.id;
+    h+='<div class="card thread'+(open?' open':'')+'" data-thread="'+t.id+'"><button class="thread-h"><div class="row" style="gap:12px;flex-wrap:nowrap;min-width:0"><span class="muted">'+ic('msg','i5')+'</span><div style="min-width:0"><h3 class="card-t">'+t.subject+'</h3><p class="xs muted" style="margin:2px 0 0"><span class="mc">'+t.msgs.length+'</span> رسالة · '+fmtDate(t.d)+'</p></div></div><div class="row" style="gap:8px;flex-wrap:nowrap">'+(t.unread?'<span class="unread-dot"></span>':'')+'<span class="badge b-outline" dir="ltr">'+t.type+'</span><span class="tchev">'+ic(open?'cu':'cd')+'</span></div></button><div class="thread-b"><div><div><div class="msgs">'+t.msgs.map(msgHtml).join('')+'</div><div class="row" style="gap:8px;padding-top:12px;flex-wrap:nowrap;align-items:stretch"><textarea class="ta" rows="2" placeholder="اكتب ردك..."></textarea><button class="btn btn-primary" style="width:40px;height:auto;padding:0" data-act="reply" aria-label="إرسال" disabled>'+ic('send')+'</button></div></div></div></div></div>';
+  });
+  return h+'</div></div>';
+}
+function msgHtml(m){return '<div class="msg '+(m.me?'me':'them')+(m.fresh?' new':'')+'"><div class="between" style="margin-bottom:4px;flex-wrap:nowrap"><span class="sm fw">'+m.who+'</span><span class="xs muted">'+fmtDate(m.d)+'</span></div><p class="sm">'+esc(m.b)+'</p></div>';}
+
+var RENDER={ops:scrOps,papers:scrPapers,paper:scrPaper,inbox:scrInbox,messages:scrMessages};
+
+/* ================= Navigation ================= */
+function paint(id){
+  S.screen=id;
+  view.innerHTML=RENDER[id]();
+  renderSidebar();
+  mainEl.scrollTop=0;
+  animateCounters(view);
+}
+var navBusy=false;
+function go(id,opts){
+  opts=opts||{};
+  if(!RENDER[id])return;
+  if(id===S.screen&&!opts.force)return;
+  closeSel();closeDlg(true);app.classList.remove('m-open');
+  var from=S.screen;
+  // Shared-element morph: give the source title the transition name
+  if(opts.morphEl){opts.morphEl.style.viewTransitionName='paper-title';}
+  S.morph=(from==='paper'&&id==='papers')?S.paperId:null;
+  var done=function(){S.morph=null;var m=view.querySelector('[style*="paper-title"]');if(m&&S.screen!=='paper')m.style.viewTransitionName='';notify(id);};
+  if(document.startViewTransition&&!RM&&from){
+    try{
+      var vt=document.startViewTransition(function(){paint(id);});
+      vt.finished.then(done,done);
+      return;
+    }catch(e){}
+  }
+  if(from&&!RM){
+    view.classList.add('fb-out');
+    setTimeout(function(){view.classList.remove('fb-out');paint(id);view.classList.add('fb-in');setTimeout(function(){view.classList.remove('fb-in');},360);done();},170);
+  }else{paint(id);done();}
+}
+function notify(id){try{if(window.parent!==window)window.parent.postMessage({type:'pw:screen-changed',slug:'jms',id:id},'*');}catch(e){}}
+function openPaper(id,el){S.paperId=id;S.openAcc={reports:true};var t=el&&el.querySelector('[data-tid="'+id+'"]');go('paper',{force:true,morphEl:t});}
+
+/* ================= Interactions ================= */
+SEL.pStatus={val:function(){return S.papersFilter;},opts:function(){return [['all','الكل']].concat(['submitted','under_review','revision_required','revised','accepted','rejected','published'].map(function(s){return [s,ST[s]];}));},set:function(v){setPapersFilter(v);}};
+SEL.opsCenter={val:function(){return 'all';},opts:function(){return [['all','كل المراكز']].concat(CENTERS.map(function(c,i){return ['c'+i,c];}));},set:function(){}};
+SEL.delay={val:function(){return '14';},opts:function(){return [['7','7 أيام'],['14','14 يوم'],['30','30 يوم'],['60','60 يوم']];},set:function(){}};
+function setPapersFilter(v){
+  S.papersFilter=v;
+  var t=document.getElementById('ptable');if(!t)return;
+  var tr=document.querySelector('[data-sel="pStatus"] .trigger span');if(tr)tr.textContent=v==='all'?'الكل':ST[v];
+  document.querySelectorAll('[data-pstat]').forEach(function(c){c.classList.toggle('on',c.getAttribute('data-pstat')===v);});
+  var swap=function(){t.innerHTML=papersTable();};
+  if(document.startViewTransition&&!RM){t.style.viewTransitionName='ptable';var vt=document.startViewTransition(swap);vt.finished.then(function(){t.style.viewTransitionName='';},function(){});}else swap();
+}
+function setOpsTab(tab){
+  if(S.opsTab===tab)return;S.opsTab=tab;
+  var tabs=['analytics','kanban','delayed','reviewers'],i=tabs.indexOf(tab);
+  view.querySelectorAll('.tab').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-tab')===tab);});
+  var ind=view.querySelector('.tab-ind');if(ind)ind.style.insetInlineStart='calc(4px + '+i+' * (100% - 8px)/4)';
+  var pane=document.getElementById('tabpane');if(pane)pane.innerHTML=opsPane();
+}
+function setOpsFilter(s){
+  S.opsFilter=S.opsFilter===s?'all':s;
+  view.querySelectorAll('[data-opsstat]').forEach(function(c){c.classList.toggle('on',c.getAttribute('data-opsstat')===S.opsFilter);});
+  if(S.opsFilter!=='all'&&S.opsTab!=='kanban')setOpsTab('kanban');
+  else{var pane=document.getElementById('tabpane');if(pane)pane.innerHTML=opsPane();}
+}
+/* dialogs */
+var dlgState=null;
+function openDlg(title,body,onConfirm){
+  var root=document.getElementById('dlgRoot');
+  root.innerHTML='<div class="overlay" id="ovl"><div class="dialog" role="dialog" aria-modal="true"><button class="ghost icon x" data-act="closedlg" aria-label="إغلاق">'+ic('x')+'</button><h3>'+title+'</h3>'+body+'</div></div>';
+  dlgState={confirm:onConfirm};
+}
+function closeDlg(now){
+  var o=document.getElementById('ovl');if(!o)return;dlgState=null;
+  if(now||RM){o.remove();return;}
+  o.classList.add('out');setTimeout(function(){o.remove();},180);
+}
+var dlgNew={};
+function statusDialog(){
+  var p=P(S.paperId),ns=Math.min(p.stage+1,4);
+  var autoStatus=['submitted','under_review','under_review','accepted','published'][ns];
+    dlgNew={status:autoStatus,stage:ns};
+  SEL.dStatus={val:function(){return dlgNew.status;},opts:function(){return FLOW.filter(function(s){return s!==p.s;}).map(function(s){return [s,ST[s]];});},set:function(v){dlgNew.status=v;document.querySelector('[data-sel="dStatus"] .trigger span').textContent=ST[v];}};
+  SEL.dStage={val:function(){return String(dlgNew.stage);},opts:function(){return STAGES.map(function(s,i){return [String(i),s];});},set:function(v){dlgNew.stage=+v;document.querySelector('[data-sel="dStage"] .trigger span').textContent=STAGES[+v];}};
+  openDlg('تغيير حالة البحث','<div class="field"><label>الحالة الجديدة</label>'+sel('dStatus',dlgNew.status,SEL.dStatus.opts())+'</div><div class="field"><label>الانتقال إلى مرحلة</label>'+sel('dStage',String(ns),SEL.dStage.opts())+'</div><div class="field"><label>ملاحظات</label><textarea class="ta" rows="3" id="dNotes"></textarea></div><button class="btn btn-primary btn-w" style="margin-top:16px" data-act="confirmdlg">تأكيد</button>',applyStatus);
+}
+function applyStatus(){
+  var p=P(S.paperId),notes=(document.getElementById('dNotes')||{}).value||'';
+  p.s=dlgNew.status;var prev=p.stage;p.stage=dlgNew.stage;
+  history(p).forEach(function(e){e.fresh=false;});
+  history(p).push({a:'Status changed to '+p.s,st:p.stage,by:ME,d:new Date().toISOString(),n:notes||null,fresh:true});
+  closeDlg();
+  toast('تم تحديث الحالة');
+  var swap=function(){
+    document.getElementById('stepWrap').innerHTML=stepper(p,true);
+    document.getElementById('hdBadge').innerHTML=badge(p.s);
+    document.getElementById('curStage').textContent=STAGES[p.stage];
+    S.openAcc.history=true;
+    document.getElementById('pdMain').innerHTML=pdMain(p);
+  };
+  // animate stepper bar fill: render old then flip classes
+  var ws=document.getElementById('stepWrap');
+  if(!RM&&ws&&p.stage>prev){
+    var bars=ws.querySelectorAll('.bar'),dots=ws.querySelectorAll('.dot');
+    for(var i=prev;i<p.stage;i++){if(bars[i])bars[i].classList.add('done');}
+    if(dots[prev]){dots[prev].classList.remove('cur');dots[prev].classList.add('done');dots[prev].innerHTML=ic('check');}
+    setTimeout(swap,520);
+  }else swap();
+}
+document.addEventListener('click',function(e){
+  var t=e.target;
+  var opt=t.closest('.opt');
+  if(opt){var w=opt.closest('.sel'),cfg=SEL[w.getAttribute('data-sel')];var v=opt.getAttribute('data-v');closeSel();if(cfg)cfg.set(v);return;}
+  var trg=t.closest('.trigger');
+  if(trg){var wr=trg.closest('.sel');if(wr.querySelector('.menu'))closeSel();else openSel(wr);return;}
+  closeSel();
+  if(t.id==='ovl'){closeDlg();return;}
+  var nav=t.closest('[data-nav]');
+  if(nav){e.preventDefault();var n=nav.getAttribute('data-nav');if(RENDER[n]){stopAuto();go(n);}else toast('هذه الصفحة غير مضمّنة في المعاينة');return;}
+  var pp=t.closest('[data-paper]');
+  if(pp){stopAuto();openPaper(pp.getAttribute('data-paper'),pp);return;}
+  var tab=t.closest('[data-tab]');if(tab){setOpsTab(tab.getAttribute('data-tab'));return;}
+  var os=t.closest('[data-opsstat]');if(os){setOpsFilter(os.getAttribute('data-opsstat'));return;}
+  var ps=t.closest('[data-pstat]');if(ps){var v=ps.getAttribute('data-pstat');setPapersFilter(S.papersFilter===v?'all':v);return;}
+  var ac=t.closest('.acc-t');if(ac){var a=ac.parentNode,k=a.getAttribute('data-acc');S.openAcc[k]=!S.openAcc[k];a.classList.toggle('open',!!S.openAcc[k]);return;}
+  var th=t.closest('.thread-h');if(th){toggleThread(th.parentNode.getAttribute('data-thread'));return;}
+  var act=t.closest('[data-act]');
+  if(act){
+    var x=act.getAttribute('data-act');
+    if(x==='status')statusDialog();
+    else if(x==='closedlg')closeDlg();
+    else if(x==='confirmdlg'){if(dlgState&&dlgState.confirm)dlgState.confirm();}
+    else if(x==='reply')sendReply(act.closest('.thread'));
+    else if(x==='csv')toast('تم تصدير '+PAPERS.length+' بحث إلى CSV');
+    else if(x==='msgauthor'){openDlg('إرسال رسالة','<textarea class="ta" rows="4" id="dMsg" placeholder="اكتب رسالتك..."></textarea><button class="btn btn-primary btn-w" style="margin-top:16px" data-act="confirmdlg">إرسال</button>',function(){var v=(document.getElementById('dMsg').value||'').trim();if(!v)return;THREADS[0].msgs.push({me:true,who:ME,d:new Date().toISOString().slice(0,10),b:v});closeDlg();toast('تم إرسال الرسالة');});}
+    else if(x==='committee'){SEL.dCom={val:function(){return 'c1';},opts:function(){return [['c1','لجنة التحكيم العلمي'],['c2','لجنة النشر']];},set:function(v){document.querySelector('[data-sel="dCom"] .trigger span').textContent=v==='c1'?'لجنة التحكيم العلمي':'لجنة النشر';}};openDlg('إرسال البحث إلى لجنة','<div class="field"><label>اختر اللجنة</label>'+sel('dCom','c1',SEL.dCom.opts())+'</div><button class="btn btn-primary btn-w" style="margin-top:16px" data-act="confirmdlg">تأكيد</button>',function(){closeDlg();toast('تم إرسال البحث إلى اللجنة');});}
+    else if(x==='assign'){openDlg('تعيين منسق للبحث','<p class="sm muted" style="background:hsl(40 15% 94% / .5);padding:12px;border-radius:6px;line-height:1.7;margin:0 0 16px">تعيين شخص من فريق المجلة كمسؤول إداري دائم عن البحث (محرر مسؤول أو منسق متابعة). لإرسال البحث لمحكم علمي لتقييمه، استخدم بدلاً من ذلك زر «إرسال طلب تحكيم» في قسم طلبات التحكيم بالأسفل.</p><div class="field"><label>البريد الإلكتروني</label><input class="input" dir="ltr" style="max-width:none" placeholder="editor@example.org"></div><button class="btn btn-primary btn-w" style="margin-top:16px" data-act="confirmdlg">تأكيد</button>',function(){closeDlg();toast('تم التعيين بنجاح');});}
+    else if(x==='reqreview')toast('تم إرسال طلب التحكيم');
+    else if(x==='file')toast('جاري تحميل الملف…');
+  }
+});
+document.addEventListener('input',function(e){
+  if(e.target.id==='pSearch'){S.search=e.target.value;document.getElementById('ptable').innerHTML=papersTable();}
+  if(e.target.matches('.thread textarea')){var b=e.target.parentNode.querySelector('[data-act="reply"]');b.disabled=!e.target.value.trim();}
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){closeSel();closeDlg();app.classList.remove('m-open');}
+  if(e.key==='Enter'&&!e.shiftKey&&e.target.matches('.thread textarea')){e.preventDefault();sendReply(e.target.closest('.thread'));}
+});
+function toggleThread(id){
+  S.openThread=S.openThread===id?null:id;
+  view.querySelectorAll('.thread').forEach(function(c){
+    var on=c.getAttribute('data-thread')===S.openThread;c.classList.toggle('open',on);
+    var chev=c.querySelector('.tchev');if(chev)chev.innerHTML=ic(on?'cu':'cd');
+    if(on){var dot=c.querySelector('.unread-dot');if(dot){dot.remove();THREADS.forEach(function(t){if(t.id===id)t.unread=false;});}}
+  });
+}
+function sendReply(card,text){
+  if(!card)return;var ta=card.querySelector('textarea'),v=(text||ta.value).trim();if(!v)return;
+  var t=THREADS.filter(function(x){return x.id===card.getAttribute('data-thread');})[0];
+  var m={me:true,who:ME,d:new Date().toISOString().slice(0,10),b:v,fresh:true};t.msgs.push(m);
+  card.querySelector('.msgs').insertAdjacentHTML('beforeend',msgHtml(m));m.fresh=false;
+  card.querySelector('.mc').textContent=t.msgs.length;
+  ta.value='';card.querySelector('[data-act="reply"]').disabled=true;
+  toast('تم إرسال الرد');
+}
+/* sidebar trigger */
+document.getElementById('sbTrigger').addEventListener('click',function(){
+  if(window.innerWidth<768)app.classList.toggle('m-open');else app.classList.toggle('collapsed');
+});
+document.getElementById('backdrop').addEventListener('click',function(){app.classList.remove('m-open');});
+document.getElementById('langBtn').addEventListener('click',function(){toast('المعاينة متاحة بالعربية فقط');});
+document.getElementById('bellBtn').addEventListener('click',function(){stopAuto();go('inbox');});
+
+/* ================= Parent API & autoplay ================= */
+window.addEventListener('message',function(e){
+  var d=e.data;if(!d||d.type!=='pw:screen')return;
+  if(RENDER[d.id]){stopAuto();go(d.id);}
+});
+var autoTimer=null,autoIdx=0,autoCycle=0;
+var AUTO=['ops','papers','paper','inbox','messages'];
+function stopAuto(){if(autoTimer){clearTimeout(autoTimer);autoTimer=null;}}
+function autoStep(){
+  var id=AUTO[autoIdx%AUTO.length];autoIdx++;
+  if(id==='paper'){S.paperId='p1';var p=P('p1');if(p.stage>=3){p.stage=1;p.s='under_review';HIST={};}S.openAcc={reports:true};}
+  if(id==='papers'&&S.papersFilter!=='all'){S.papersFilter='all';}
+  if(id==='ops'){S.opsTab='analytics';S.opsFilter='all';}
+  if(id==='messages')S.openThread=null;
+  var titleEl=null;
+  if(id==='paper'&&S.screen==='papers'){var row=view.querySelector('[data-paper="p1"]');titleEl=row&&row.querySelector('[data-tid="p1"]');}
+  go(id,{force:true,morphEl:titleEl});
+  var later=function(fn,ms){setTimeout(function(){if(autoTimer&&S.screen===id)fn();},ms);};
+  if(id==='ops'&&autoCycle%2===1)later(function(){setOpsTab('kanban');},1900);
+  if(id==='papers')later(function(){setPapersFilter('under_review');},1500);
+  if(id==='paper')later(function(){statusDialog();setTimeout(function(){if(autoTimer&&dlgState)applyStatus();},900);},1100);
+  if(id==='messages')later(function(){toggleThread('t1');},1100);
+  if(id==='messages')autoCycle++;
+  autoTimer=setTimeout(autoStep,3500);
+}
+
+/* ================= Boot ================= */
+renderSidebar();
+if(THUMB)document.body.classList.add('thumb');
+var start=Q.get('screen');if(!RENDER[start])start='ops';
+paint(start);
+try{if(window.parent!==window)window.parent.postMessage({type:'pw:ready',slug:'jms',screens:SCREENS},'*');}catch(e){}
+notify(start);
+if(THUMB){autoIdx=Math.max(0,AUTO.indexOf(start))+1;var first=AUTO[autoIdx-1];autoTimer=setTimeout(autoStep,3500);if(first==='papers')setTimeout(function(){if(autoTimer)setPapersFilter('under_review');},1500);}
+window.__jms={go:go,screens:SCREENS};
+})();
+</script>
+</body>
+</html>
